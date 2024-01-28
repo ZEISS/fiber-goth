@@ -7,13 +7,13 @@ package goth
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
+	"math/big"
 	"strings"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
@@ -23,9 +23,7 @@ import (
 
 var _ GothHandler = (*BeginAuthHandler)(nil)
 
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+const charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
 
 // Params ...
 type Params struct {
@@ -150,7 +148,8 @@ func (s *sessionStore) Update(c *fiber.Ctx, key, value string) error {
 }
 
 // ProviderFromContext returns the provider from the request context.
-func ProviderFromContext(c *fiber.Ctx) {
+func ProviderFromContext(c *fiber.Ctx) string {
+	return c.Get(fmt.Sprint(providerKey))
 }
 
 // BeginAuthHandler ...
@@ -188,6 +187,8 @@ func NewBeginAuthHandler(config ...Config) fiber.Handler {
 type CompleteAuthCompleteHandler struct{}
 
 // New creates a new handler to complete authentication.
+//
+//nolint:gocyclo
 func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		if cfg.Next != nil && cfg.Next(c) {
@@ -283,7 +284,12 @@ func GetAuthURLFromContext(c *fiber.Ctx, session SessionStore) (string, error) {
 		return "", err
 	}
 
-	sess, err := provider.BeginAuth(stateFromContext(c))
+	state, err := stateFromContext(c)
+	if err != nil {
+		return "", err
+	}
+
+	sess, err := provider.BeginAuth(state)
 	if err != nil {
 		return "", err
 	}
@@ -304,6 +310,13 @@ func GetAuthURLFromContext(c *fiber.Ctx, session SessionStore) (string, error) {
 // GetStateFromContext return the state that is returned during the callback.
 func GetStateFromContext(ctx *fiber.Ctx) string {
 	return ctx.Query(state)
+}
+
+// ContextWithProvider returns a new request context containing the provider.
+func ContextWithProvider(ctx *fiber.Ctx, provider string) *fiber.Ctx {
+	ctx.Set(fmt.Sprint(providerKey), provider)
+
+	return ctx
 }
 
 // Config caputes the configuration for running the goth middleware.
@@ -380,21 +393,30 @@ func configDefault(config ...Config) Config {
 	return cfg
 }
 
-func stateFromContext(ctx *fiber.Ctx) string {
+func stateFromContext(ctx *fiber.Ctx) (string, error) {
 	state := ctx.Query(state)
 	if len(state) > 0 {
-		return state
+		return state, nil
 	}
 
-	nonce := generateRandomString(64)
+	nonce, err := generateRandomString(64)
+	if err != nil {
+		return "", err
+	}
 
-	return base64.URLEncoding.EncodeToString(nonce)
+	return base64.URLEncoding.EncodeToString(nonce), nil
 }
 
-func generateRandomString(length int) []byte {
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
+func generateRandomString(n int) ([]byte, error) {
+	b := make([]byte, n)
+
+	for i := 0; i < n; i++ {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			return b, err
+		}
+		b[i] = charset[num.Int64()]
 	}
-	return b
+
+	return b, nil
 }
