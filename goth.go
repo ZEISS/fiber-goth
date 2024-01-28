@@ -158,7 +158,7 @@ func NewBeginAuthHandler(config ...Config) fiber.Handler {
 
 // GetAuthURLFromContext returns the provider specific authentication URL.
 func GetAuthURLFromContext(c *fiber.Ctx, session SessionStore) (string, error) {
-	p := c.Query(provider)
+	p := c.Params(provider)
 	if p == "" {
 		return "", ErrMissingProviderName
 	}
@@ -212,6 +212,7 @@ type Config struct {
 var ConfigDefault = Config{
 	ErrorHandler:     defaultErrorHandler,
 	BeginAuthHandler: BeginAuthHandler{},
+	Session:          NewSessionStore(session.New(defaultSessionConfig)),
 }
 
 // default ErrorHandler that process return error from fiber.Handler
@@ -227,7 +228,7 @@ var defaultSessionConfig = session.Config{
 // Helper function to set default values
 func configDefault(config ...Config) Config {
 	if len(config) < 1 {
-		return configDefault()
+		return ConfigDefault
 	}
 
 	// Override default config
