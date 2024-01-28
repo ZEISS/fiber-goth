@@ -234,21 +234,15 @@ func main() {
 	}
 
 	app.Get("/login/:provider", fiber_goth.NewBeginAuthHandler())
-
-	app.Get("/auth/:provider/callback/", func(c *fiber.Ctx) error {
-		return nil
-	})
-
-	app.Get("/logout/", func(c *fiber.Ctx) error {
-		return nil
-	})
+	app.Get("/auth/:provider/callback/", fiber_goth.NewCompleteAuthHandler())
+	app.Get("/logout", fiber_goth.NewLogoutHandler())
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
 		return t.Execute(c.Response().BodyWriter(), providerIndex)
 	})
 
-	if err := app.Listen(":3000"); err != nil {
+	if err := app.Listen("0.0.0.0:3000"); err != nil {
 		log.Fatal(err)
 	}
 }

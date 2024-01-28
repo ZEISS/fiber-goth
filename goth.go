@@ -27,6 +27,18 @@ const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
+// Params ...
+type Params struct {
+	ctx *fiber.Ctx
+}
+
+// Get ...
+func (p *Params) Get(key string) string {
+	return p.ctx.Query(key)
+}
+
+var _ goth.Params = (*Params)(nil)
+
 // The contextKey type is unexported to prevent collisions with context keys defined in
 // other packages.
 type contextKey int
@@ -48,6 +60,7 @@ const (
 type SessionStore interface {
 	Get(c *fiber.Ctx, key string) (string, error)
 	Update(c *fiber.Ctx, key, value string) error
+	Destroy(c *fiber.Ctx) error
 }
 
 var _ SessionStore = (*sessionStore)(nil)
@@ -89,6 +102,21 @@ func (s *sessionStore) Get(c *fiber.Ctx, key string) (string, error) {
 	return string(v), nil
 }
 
+// Destroy ...
+func (s *sessionStore) Destroy(c *fiber.Ctx) error {
+	session, err := s.store.Get(c)
+	if err != nil {
+		return err
+	}
+
+	err = session.Destroy()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Update updates session data.
 func (s *sessionStore) Update(c *fiber.Ctx, key, value string) error {
 	session, err := s.store.Get(c)
@@ -125,7 +153,7 @@ func (s *sessionStore) Update(c *fiber.Ctx, key, value string) error {
 func ProviderFromContext(c *fiber.Ctx) {
 }
 
-// BeginAuthHandler
+// BeginAuthHandler ...
 type BeginAuthHandler struct{}
 
 // New creates a new handler to begin authentication.
@@ -154,6 +182,93 @@ func NewBeginAuthHandler(config ...Config) fiber.Handler {
 	cfg := configDefault(config...)
 
 	return cfg.BeginAuthHandler.New(cfg)
+}
+
+// CompleteAuthComplete ...
+type CompleteAuthCompleteHandler struct{}
+
+// New creates a new handler to complete authentication.
+func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		if cfg.Next != nil && cfg.Next(c) {
+			return c.Next()
+		}
+
+		p := c.Params(provider)
+		if p == "" {
+			return ErrMissingProviderName
+		}
+
+		provider, err := goth.GetProvider(p)
+		if err != nil {
+			return err
+		}
+
+		v, err := cfg.Session.Get(c, p)
+		if err != nil {
+			return err
+		}
+
+		sess, err := provider.UnmarshalSession(v)
+		if err != nil {
+			return err
+		}
+
+		user, err := provider.FetchUser(sess)
+		if err == nil {
+			return c.SendString(user.Email)
+		}
+
+		_, err = sess.Authorize(provider, &Params{ctx: c})
+		if err != nil {
+			return err
+		}
+
+		err = cfg.Session.Update(c, p, sess.Marshal())
+		if err != nil {
+			return err
+		}
+
+		user, err = provider.FetchUser(sess)
+		if err != nil {
+			return err
+		}
+
+		return c.SendString(user.Email)
+	}
+}
+
+// NewBeginCompleteAuthHandler creates a new middleware handler to complete authentication.
+func NewCompleteAuthHandler(config ...Config) fiber.Handler {
+	cfg := configDefault(config...)
+
+	return cfg.CompleteAuthHandler.New(cfg)
+}
+
+// LogoutHandler ...
+type LogoutHandler struct{}
+
+// NewLogoutHandler ...
+func NewLogoutHandler(config ...Config) fiber.Handler {
+	cfg := configDefault(config...)
+
+	return cfg.LogoutHandler.New(cfg)
+}
+
+// New creates a new handler to logout.
+func (LogoutHandler) New(cfg Config) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		if cfg.Next != nil && cfg.Next(c) {
+			return c.Next()
+		}
+
+		err := cfg.Session.Destroy(c)
+		if err != nil {
+			return cfg.ErrorHandler(c, err)
+		}
+
+		return nil
+	}
 }
 
 // GetAuthURLFromContext returns the provider specific authentication URL.
@@ -199,6 +314,12 @@ type Config struct {
 	// BeginAuthHandler ...
 	BeginAuthHandler GothHandler
 
+	// CompleteAuthHandler ...
+	CompleteAuthHandler GothHandler
+
+	// LogoutHandler ...
+	LogoutHandler GothHandler
+
 	// Session ...
 	Session SessionStore
 
@@ -210,9 +331,11 @@ type Config struct {
 
 // ConfigDefault is the default config.
 var ConfigDefault = Config{
-	ErrorHandler:     defaultErrorHandler,
-	BeginAuthHandler: BeginAuthHandler{},
-	Session:          NewSessionStore(session.New(defaultSessionConfig)),
+	ErrorHandler:        defaultErrorHandler,
+	BeginAuthHandler:    BeginAuthHandler{},
+	CompleteAuthHandler: CompleteAuthCompleteHandler{},
+	LogoutHandler:       LogoutHandler{},
+	Session:             NewSessionStore(session.New(defaultSessionConfig)),
 }
 
 // default ErrorHandler that process return error from fiber.Handler
@@ -244,6 +367,14 @@ func configDefault(config ...Config) Config {
 
 	if cfg.BeginAuthHandler == nil {
 		cfg.BeginAuthHandler = ConfigDefault.BeginAuthHandler
+	}
+
+	if cfg.CompleteAuthHandler == nil {
+		cfg.CompleteAuthHandler = ConfigDefault.CompleteAuthHandler
+	}
+
+	if cfg.LogoutHandler == nil {
+		cfg.LogoutHandler = ConfigDefault.LogoutHandler
 	}
 
 	return cfg
