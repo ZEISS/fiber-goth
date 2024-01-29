@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"os"
@@ -9,7 +10,9 @@ import (
 	fiber_goth "github.com/zeiss/fiber-goth"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/amazon"
 	"github.com/markbates/goth/providers/apple"
 	"github.com/markbates/goth/providers/auth0"
@@ -232,6 +235,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// This is an example to configure to use a custom session.
+	sess := session.Config{
+		KeyLookup:      fmt.Sprintf("cookie:%s", gothic.SessionName),
+		CookieHTTPOnly: true,
+	}
+	fiber_goth.ConfigDefault.Session = fiber_goth.NewSessionStore(session.New(sess))
 
 	app.Get("/login/:provider", fiber_goth.NewBeginAuthHandler())
 	app.Get("/auth/:provider/callback/", fiber_goth.NewCompleteAuthHandler())

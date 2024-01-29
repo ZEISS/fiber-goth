@@ -66,6 +66,8 @@ type SessionStore interface {
 	Update(c *fiber.Ctx, key, value string) error
 	// Destroy ...
 	Destroy(c *fiber.Ctx) error
+	// Interface ...
+	Interface() any
 }
 
 var _ SessionStore = (*sessionStore)(nil)
@@ -152,6 +154,18 @@ func (s *sessionStore) Update(c *fiber.Ctx, key, value string) error {
 	}
 
 	return nil
+}
+
+// Store returns the raw interface.
+func (s *sessionStore) Interface() any {
+	return s.store
+}
+
+// Return the raw store of the used default session
+func DefaultSession() any {
+	cfg := configDefault()
+
+	return cfg.Session.Interface()
 }
 
 // ProviderFromContext returns the provider from the request context.
