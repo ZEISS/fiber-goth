@@ -25,12 +25,12 @@ var _ GothHandler = (*BeginAuthHandler)(nil)
 
 const charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
 
-// Params ...
+// Params maps the parameters of the Fiber context to the gothic context.
 type Params struct {
 	ctx *fiber.Ctx
 }
 
-// Get ...
+// Get returns the value of a query paramater.
 func (p *Params) Get(key string) string {
 	return p.ctx.Query(key)
 }
@@ -46,24 +46,31 @@ const (
 	providerKey contextKey = 0
 )
 
-// ErrMissingProviderName is thrown if the provider cannot be determined.
-var ErrMissingProviderName = errors.New("missing provider name in request")
+var (
+	// ErrMissingProviderName is thrown if the provider cannot be determined.
+	ErrMissingProviderName = errors.New("missing provider name in request")
+	// ErrMissingSession is thrown if there is no active session.
+	ErrMissingSession = errors.New("could not find a matching session for this request")
+)
 
 const (
 	state    = "state"
 	provider = "provider"
 )
 
-// SessionStore ...
+// SessionStore is the interface to store session information for authentication.
 type SessionStore interface {
+	// Get ...
 	Get(c *fiber.Ctx, key string) (string, error)
+	// Update ...
 	Update(c *fiber.Ctx, key, value string) error
+	// Destroy ...
 	Destroy(c *fiber.Ctx) error
 }
 
 var _ SessionStore = (*sessionStore)(nil)
 
-// NewSessionStore ...
+// NewSessionStore returns a new default store based on the session middleware.
 func NewSessionStore(store *session.Store) *sessionStore {
 	return &sessionStore{
 		store: store,
@@ -83,7 +90,7 @@ func (s *sessionStore) Get(c *fiber.Ctx, key string) (string, error) {
 
 	value := session.Get(key)
 	if value == nil {
-		return "", errors.New("could not find a matching session for this request")
+		return "", ErrMissingSession
 	}
 
 	rdata := strings.NewReader(value.(string))
@@ -100,7 +107,7 @@ func (s *sessionStore) Get(c *fiber.Ctx, key string) (string, error) {
 	return string(v), nil
 }
 
-// Destroy ...
+// Destroy the session.
 func (s *sessionStore) Destroy(c *fiber.Ctx) error {
 	session, err := s.store.Get(c)
 	if err != nil {
@@ -152,7 +159,7 @@ func ProviderFromContext(c *fiber.Ctx) string {
 	return c.Get(fmt.Sprint(providerKey))
 }
 
-// BeginAuthHandler ...
+// BeginAuthHandler is the default handler to begin the authentication process.
 type BeginAuthHandler struct{}
 
 // New creates a new handler to begin authentication.
@@ -171,7 +178,7 @@ func (BeginAuthHandler) New(cfg Config) fiber.Handler {
 	}
 }
 
-// GothHandler ...
+// GothHandler is the interface for defining handlers for the middleware.
 type GothHandler interface {
 	New(cfg Config) fiber.Handler
 }
@@ -183,7 +190,7 @@ func NewBeginAuthHandler(config ...Config) fiber.Handler {
 	return cfg.BeginAuthHandler.New(cfg)
 }
 
-// CompleteAuthComplete ...
+// CompleteAuthComplete is the default handler to complete the authentication process.
 type CompleteAuthCompleteHandler struct{}
 
 // New creates a new handler to complete authentication.
@@ -215,9 +222,9 @@ func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 			return err
 		}
 
-		user, err := provider.FetchUser(sess)
+		_, err = provider.FetchUser(sess)
 		if err == nil {
-			return c.SendString(user.Email)
+			return cfg.ResponseFilter(c)
 		}
 
 		_, err = sess.Authorize(provider, &Params{ctx: c})
@@ -230,12 +237,12 @@ func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 			return err
 		}
 
-		user, err = provider.FetchUser(sess)
+		_, err = provider.FetchUser(sess)
 		if err != nil {
 			return err
 		}
 
-		return c.SendString(user.Email)
+		return cfg.ResponseFilter(c)
 	}
 }
 
@@ -246,10 +253,10 @@ func NewCompleteAuthHandler(config ...Config) fiber.Handler {
 	return cfg.CompleteAuthHandler.New(cfg)
 }
 
-// LogoutHandler ...
+// LogoutHandler is the default handler for the logout process.
 type LogoutHandler struct{}
 
-// NewLogoutHandler ...
+// NewLogoutHandler returns a new default logout handler.
 func NewLogoutHandler(config ...Config) fiber.Handler {
 	cfg := configDefault(config...)
 
@@ -268,7 +275,7 @@ func (LogoutHandler) New(cfg Config) fiber.Handler {
 			return cfg.ErrorHandler(c, err)
 		}
 
-		return nil
+		return cfg.ResponseFilter(c)
 	}
 }
 
@@ -324,17 +331,20 @@ type Config struct {
 	// Next defines a function to skip this middleware when returned true.
 	Next func(c *fiber.Ctx) bool
 
-	// BeginAuthHandler ...
+	// BeginAuthHandler is the handler to start authentication.
 	BeginAuthHandler GothHandler
 
-	// CompleteAuthHandler ...
+	// CompleteAuthHandler is the handler to complete the authentication.
 	CompleteAuthHandler GothHandler
 
-	// LogoutHandler ...
+	// LogoutHandler is the handler to logout.
 	LogoutHandler GothHandler
 
-	// Session ...
+	// Session stores an authentication session.
 	Session SessionStore
+
+	// Response filter that is executed when responses need to returned.
+	ResponseFilter func(c *fiber.Ctx) error
 
 	// ErrorHandler is executed when an error is returned from fiber.Handler.
 	//
@@ -345,6 +355,7 @@ type Config struct {
 // ConfigDefault is the default config.
 var ConfigDefault = Config{
 	ErrorHandler:        defaultErrorHandler,
+	ResponseFilter:      defaultResponseFilter,
 	BeginAuthHandler:    BeginAuthHandler{},
 	CompleteAuthHandler: CompleteAuthCompleteHandler{},
 	LogoutHandler:       LogoutHandler{},
@@ -354,6 +365,11 @@ var ConfigDefault = Config{
 // default ErrorHandler that process return error from fiber.Handler
 func defaultErrorHandler(_ *fiber.Ctx, _ error) error {
 	return fiber.ErrBadRequest
+}
+
+// default filter for response that process default return.
+func defaultResponseFilter(c *fiber.Ctx) error {
+	return c.SendStatus(fiber.StatusOK)
 }
 
 var defaultSessionConfig = session.Config{
@@ -376,6 +392,10 @@ func configDefault(config ...Config) Config {
 
 	if cfg.Session == nil {
 		cfg.Session = NewSessionStore(session.New(defaultSessionConfig))
+	}
+
+	if cfg.ResponseFilter == nil {
+		cfg.ResponseFilter = defaultResponseFilter
 	}
 
 	if cfg.BeginAuthHandler == nil {
