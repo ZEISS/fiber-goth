@@ -16,7 +16,7 @@ $ go get github.com/shareed2k/goth_fiber
 
 ## Examples
 
-See [examples](https://github.com/Shareed2k/goth_fiber/tree/master/examples) to understand the provided interfaces.
+See [examples](https://github.com/zeiss/fiber-goth/tree/master/examples) to understand the provided interfaces.
 
 ## Supported Providers
 
