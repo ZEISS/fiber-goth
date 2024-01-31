@@ -11,7 +11,7 @@ A [fiber](https://gofiber.io/) :rocket: middleware to integrate authentication t
 ## Installation
 
 ```bash
-$ go get github.com/shareed2k/goth_fiber
+$ go get github.com/zeiss/fiber-goth
 ```
 
 ## Examples
