@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"log"
@@ -8,9 +9,14 @@ import (
 	"sort"
 
 	fiber_goth "github.com/zeiss/fiber-goth"
+	gorm_adapter "github.com/zeiss/fiber-goth/adapters/gorm"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/fiber/v2/middleware/session"
+	"github.com/gofiber/storage/sqlite3"
+	ll "github.com/katallaxie/pkg/logger"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/amazon"
@@ -73,9 +79,66 @@ import (
 	"github.com/markbates/goth/providers/yammer"
 	"github.com/markbates/goth/providers/yandex"
 	"github.com/markbates/goth/providers/zoom"
+	"github.com/spf13/cobra"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-func main() {
+// Config ...
+type Config struct {
+	Flags *Flags
+}
+
+// Flags ...
+type Flags struct {
+	Addr string
+	DB   *DB
+}
+
+// DB ...
+type DB struct {
+	Host     string
+	Username string
+	Password string
+	Port     int
+	Database string
+}
+
+var cfg = &Config{
+	Flags: &Flags{
+		DB: &DB{
+			Host:     "host.docker.internal",
+			Username: "example",
+			Password: "example",
+			Port:     5432,
+			Database: "example",
+		},
+	},
+}
+
+var rootCmd = &cobra.Command{
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return run(cmd.Context())
+	},
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringVar(&cfg.Flags.Addr, "addr", ":8080", "addr")
+	rootCmd.PersistentFlags().StringVar(&cfg.Flags.DB.Host, "db-host", cfg.Flags.DB.Host, "Database host")
+	rootCmd.PersistentFlags().StringVar(&cfg.Flags.DB.Database, "db-database", cfg.Flags.DB.Database, "Database name")
+	rootCmd.PersistentFlags().StringVar(&cfg.Flags.DB.Username, "db-username", cfg.Flags.DB.Username, "Database user")
+	rootCmd.PersistentFlags().StringVar(&cfg.Flags.DB.Password, "db-password", cfg.Flags.DB.Password, "Database password")
+	rootCmd.PersistentFlags().IntVar(&cfg.Flags.DB.Port, "db-port", cfg.Flags.DB.Port, "Database port")
+
+	rootCmd.SilenceUsage = true
+}
+
+func run(ctx context.Context) error {
+	log.SetFlags(0)
+	log.SetOutput(os.Stderr)
+
+	ll.RedirectStdLog(ll.LogSink)
+
 	goth.UseProviders(
 		// Use twitterv2 instead of twitter if you only have access to the Essential API Level
 		// the twitter provider uses a v1.1 API that is not available to the Essential Level
@@ -226,9 +289,29 @@ func main() {
 	}
 	sort.Strings(keys)
 
-	providerIndex := &ProviderIndex{Providers: keys, ProvidersMap: m}
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable", cfg.Flags.DB.Host, cfg.Flags.DB.Username, cfg.Flags.DB.Password, cfg.Flags.DB.Database, cfg.Flags.DB.Port)
+	conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return err
+	}
+
+	_, err = gorm_adapter.New(conn)
+	if err != nil {
+		return err
+	}
+
+	storage := sqlite3.New()
+	sess := session.Config{
+		Storage:        storage,
+		KeyLookup:      fmt.Sprintf("cookie:%s", gothic.SessionName),
+		CookieHTTPOnly: true,
+	}
 
 	app := fiber.New()
+	app.Use(requestid.New())
+	app.Use(logger.New())
+
+	providerIndex := &ProviderIndex{Providers: keys, ProvidersMap: m}
 	engine := template.New("views")
 
 	t, err := engine.Parse(indexTemplate)
@@ -237,14 +320,10 @@ func main() {
 	}
 
 	// This is an example to configure to use a custom session.
-	sess := session.Config{
-		KeyLookup:      fmt.Sprintf("cookie:%s", gothic.SessionName),
-		CookieHTTPOnly: true,
-	}
 	fiber_goth.ConfigDefault.Session = fiber_goth.NewSessionStore(session.New(sess))
 
 	app.Get("/login/:provider", fiber_goth.NewBeginAuthHandler())
-	app.Get("/auth/:provider/callback/", fiber_goth.NewCompleteAuthHandler())
+	app.Get("/auth/:provider/callback", fiber_goth.NewCompleteAuthHandler())
 	app.Get("/logout", fiber_goth.NewLogoutHandler())
 
 	app.Get("/", func(c *fiber.Ctx) error {
@@ -253,13 +332,21 @@ func main() {
 	})
 
 	if err := app.Listen("0.0.0.0:3000"); err != nil {
-		log.Fatal(err)
+		return err
 	}
+
+	return nil
 }
 
 type ProviderIndex struct {
 	Providers    []string
 	ProvidersMap map[string]string
+}
+
+func main() {
+	if err := rootCmd.Execute(); err != nil {
+		panic(err)
+	}
 }
 
 var indexTemplate = `{{range $key,$value:=.Providers}}

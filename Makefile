@@ -13,6 +13,13 @@ generate: ## Generate code.
 fmt: ## Run go fmt against code.
 	$(GO_RUN_TOOLS) mvdan.cc/gofumpt -w .
 
+.PHONY: generate
+generate: ## Generate code.
+	$(GO) generate ./...
+	$(GO_RUN_TOOLS) github.com/deepmap/oapi-codegen/v2/cmd/oapi-codegen -config ./examples/api/config.models.yml ./examples/api/api.yml
+	$(GO_RUN_TOOLS) github.com/deepmap/oapi-codegen/v2/cmd/oapi-codegen -config ./examples/api/config.client.yml ./examples/api/api.yml
+	$(GO_RUN_TOOLS) github.com/deepmap/oapi-codegen/v2/cmd/oapi-codegen -config ./examples/api/config.server.yml ./examples/api/api.yml
+
 .PHONY: vet
 vet: ## Run go vet against code.
 	$(GO) vet ./...
