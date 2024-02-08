@@ -1,10 +1,13 @@
 package providers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/zeiss/fiber-goth/adapters"
 )
 
 // DefaultClient is the default HTTP client used.
@@ -18,14 +21,37 @@ var DefaultClient = &http.Client{
 // ErrUnimplemented is returned when a method is not implemented.
 var ErrUnimplemented = errors.New("not implemented")
 
+// ErrNoAuthURL is returned when an AuthURL has not been set.
+var ErrNoAuthURL = errors.New("an AuthURL has not been set")
+
 // Provider needs to be implemented for each 3rd party authentication provider.
 type Provider interface {
+	// ID returns the provider's ID.
 	ID() string
-	Name() string
-	Type() ProviderType
+	// Debug sets the provider's debug mode.
 	Debug(bool)
+	// Name returns the provider's name.
+	Name() string
+	// Type returns the provider's type.
+	Type() ProviderType
+	// BeginAuth starts the authentication process.
+	BeginAuth(state string) (AuthIntent, error)
+	// CompleteAuth completes the authentication process.
+	CompleteAuth(ctx context.Context, params AuthParams) (adapters.User, error)
 }
 
+// AuthParams is the type of authentication parameters.
+type AuthParams interface {
+	Get(string) string
+}
+
+// AuthIntent is the type of authentication intent.
+type AuthIntent interface {
+	// GetAuthURL returns the URL for the authentication end-point.
+	GetAuthURL() (string, error)
+}
+
+// PrioviderType is the type of provider.
 type ProviderType string
 
 const (
@@ -51,7 +77,7 @@ var providers = Providers{}
 // RegisterProvider adds a provider to the list of available providers for use with Goth.
 func RegisterProvider(provider ...Provider) {
 	for _, p := range provider {
-		providers[p.Name()] = p
+		providers[p.ID()] = p
 	}
 }
 
@@ -70,6 +96,8 @@ func GetProvider(name string) (Provider, error) {
 
 	return provider, nil
 }
+
+var _ Provider = (*UnimplementedProvider)(nil)
 
 // UnimplementedProvider is a placeholder for a provider that has not been implemented.
 type UnimplementedProvider struct {
@@ -94,4 +122,14 @@ func (u *UnimplementedProvider) Type() ProviderType {
 // Debug sets the provider's debug mode.
 func (u *UnimplementedProvider) Debug(debug bool) {
 	u.debug = debug
+}
+
+// BeginAuth starts the authentication process.
+func (u *UnimplementedProvider) BeginAuth(state string) (AuthIntent, error) {
+	return nil, ErrUnimplemented
+}
+
+// CompleteAuth completes the authentication process.
+func (u *UnimplementedProvider) CompleteAuth(ctx context.Context, params AuthParams) (adapters.User, error) {
+	return adapters.User{}, ErrUnimplemented
 }

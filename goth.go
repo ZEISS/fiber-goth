@@ -5,20 +5,18 @@
 package goth
 
 import (
-	"bytes"
-	"compress/gzip"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io"
 	"math/big"
-	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/markbates/goth"
-	"github.com/markbates/goth/gothic"
+	"github.com/valyala/fasthttp"
+	"github.com/zeiss/fiber-goth/adapters"
+	"github.com/zeiss/fiber-goth/providers"
 )
 
 var _ GothHandler = (*BeginAuthHandler)(nil)
@@ -58,116 +56,6 @@ const (
 	provider = "provider"
 )
 
-// SessionStore is the interface to store session information for authentication.
-type SessionStore interface {
-	// Get ...
-	Get(c *fiber.Ctx, key string) (string, error)
-	// Update ...
-	Update(c *fiber.Ctx, key, value string) error
-	// Destroy ...
-	Destroy(c *fiber.Ctx) error
-	// Interface ...
-	Interface() any
-}
-
-var _ SessionStore = (*sessionStore)(nil)
-
-// NewSessionStore returns a new default store based on the session middleware.
-func NewSessionStore(store *session.Store) *sessionStore {
-	return &sessionStore{
-		store: store,
-	}
-}
-
-type sessionStore struct {
-	store *session.Store
-}
-
-// Get returns session data.
-func (s *sessionStore) Get(c *fiber.Ctx, key string) (string, error) {
-	session, err := s.store.Get(c)
-	if err != nil {
-		return "", err
-	}
-
-	value := session.Get(key)
-	if value == nil {
-		return "", ErrMissingSession
-	}
-
-	rdata := strings.NewReader(value.(string))
-	r, err := gzip.NewReader(rdata)
-	if err != nil {
-		return "", err
-	}
-
-	v, err := io.ReadAll(r)
-	if err != nil {
-		return "", err
-	}
-
-	return string(v), nil
-}
-
-// Destroy the session.
-func (s *sessionStore) Destroy(c *fiber.Ctx) error {
-	session, err := s.store.Get(c)
-	if err != nil {
-		return err
-	}
-
-	err = session.Destroy()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Update updates session data.
-func (s *sessionStore) Update(c *fiber.Ctx, key, value string) error {
-	session, err := s.store.Get(c)
-	if err != nil {
-		return err
-	}
-
-	var b bytes.Buffer
-
-	gz := gzip.NewWriter(&b)
-	if _, err := gz.Write([]byte(value)); err != nil {
-		return err
-	}
-
-	if err := gz.Flush(); err != nil {
-		return err
-	}
-
-	if err := gz.Close(); err != nil {
-		return err
-	}
-
-	session.Set(key, b.String())
-
-	err = session.Save()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Store returns the raw interface.
-func (s *sessionStore) Interface() any {
-	return s.store
-}
-
-// Return the raw store of the used default session
-func DefaultSession() any {
-	cfg := configDefault()
-
-	return cfg.Session.Interface()
-}
-
 // ProviderFromContext returns the provider from the request context.
 func ProviderFromContext(c *fiber.Ctx) string {
 	return c.Get(fmt.Sprint(providerKey))
@@ -183,9 +71,29 @@ func (BeginAuthHandler) New(cfg Config) fiber.Handler {
 			return c.Next()
 		}
 
-		url, err := GetAuthURLFromContext(c, cfg.Session)
+		p := c.Params(provider)
+		if p == "" {
+			return ErrMissingProviderName
+		}
+
+		provider, err := providers.GetProvider(p)
 		if err != nil {
-			return cfg.ErrorHandler(c, err)
+			return err
+		}
+
+		state, err := stateFromContext(c)
+		if err != nil {
+			return err
+		}
+
+		intent, err := provider.BeginAuth(state)
+		if err != nil {
+			return err
+		}
+
+		url, err := intent.GetAuthURL()
+		if err != nil {
+			return err
 		}
 
 		return c.Redirect(url, fiber.StatusTemporaryRedirect)
@@ -218,43 +126,39 @@ func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 
 		p := c.Params(provider)
 		if p == "" {
-			return ErrMissingProviderName
+			return cfg.ErrorHandler(c, ErrMissingProviderName)
 		}
 
-		provider, err := goth.GetProvider(p)
+		provider, err := providers.GetProvider(p)
 		if err != nil {
-			return err
+			return cfg.ErrorHandler(c, err)
 		}
 
-		v, err := cfg.Session.Get(c, p)
+		user, err := provider.CompleteAuth(c.Context(), &Params{ctx: c})
 		if err != nil {
-			return err
+			return cfg.ErrorHandler(c, err)
 		}
 
-		sess, err := provider.UnmarshalSession(v)
+		duration, err := time.ParseDuration(cfg.Expiry)
 		if err != nil {
-			return err
+			return cfg.ErrorHandler(c, err)
 		}
+		expires := time.Now().Add(duration)
 
-		_, err = provider.FetchUser(sess)
-		if err == nil {
-			return cfg.ResponseFilter(c)
-		}
-
-		_, err = sess.Authorize(provider, &Params{ctx: c})
+		session, err := cfg.Adapter.CreateSession(c.Context(), user.ID, expires)
 		if err != nil {
-			return err
+			return cfg.ErrorHandler(c, err)
 		}
 
-		err = cfg.Session.Update(c, p, sess.Marshal())
-		if err != nil {
-			return err
-		}
+		cookieValue := fasthttp.Cookie{}
+		cookieValue.SetKeyBytes([]byte(cfg.CookieName))
+		cookieValue.SetValueBytes([]byte(session.SessionToken))
+		cookieValue.SetHTTPOnly(true)
+		cookieValue.SetSameSite(fasthttp.CookieSameSiteLaxMode)
+		cookieValue.SetExpire(expires)
+		cookieValue.SetPath("/")
 
-		_, err = provider.FetchUser(sess)
-		if err != nil {
-			return err
-		}
+		c.Response().Header.SetCookie(&cookieValue)
 
 		return cfg.ResponseFilter(c)
 	}
@@ -284,48 +188,13 @@ func (LogoutHandler) New(cfg Config) fiber.Handler {
 			return c.Next()
 		}
 
-		err := cfg.Session.Destroy(c)
-		if err != nil {
-			return cfg.ErrorHandler(c, err)
-		}
+		// err := cfg.Session.Destroy(c)
+		// if err != nil {
+		// 	return cfg.ErrorHandler(c, err)
+		// }
 
 		return cfg.ResponseFilter(c)
 	}
-}
-
-// GetAuthURLFromContext returns the provider specific authentication URL.
-func GetAuthURLFromContext(c *fiber.Ctx, session SessionStore) (string, error) {
-	p := c.Params(provider)
-	if p == "" {
-		return "", ErrMissingProviderName
-	}
-
-	provider, err := goth.GetProvider(p)
-	if err != nil {
-		return "", err
-	}
-
-	state, err := stateFromContext(c)
-	if err != nil {
-		return "", err
-	}
-
-	sess, err := provider.BeginAuth(state)
-	if err != nil {
-		return "", err
-	}
-
-	url, err := sess.GetAuthURL()
-	if err != nil {
-		return "", err
-	}
-
-	err = session.Update(c, p, sess.Marshal())
-	if err != nil {
-		return "", err
-	}
-
-	return url, err
 }
 
 // GetStateFromContext return the state that is returned during the callback.
@@ -354,11 +223,27 @@ type Config struct {
 	// LogoutHandler is the handler to logout.
 	LogoutHandler GothHandler
 
-	// Session stores an authentication session.
-	Session SessionStore
-
 	// Response filter that is executed when responses need to returned.
 	ResponseFilter func(c *fiber.Ctx) error
+
+	// Secret is the secret used to sign the session.
+	Secret string
+
+	// Expiry is the duration that the session is valid for.
+	Expiry string
+
+	// CookieName is the name of the cookie used to store the session.
+	CookieName string
+
+	// Encryptor is the function used to encrypt the session.
+	Encryptor func(decryptedString, key string) (string, error)
+
+	// Decryptor is the function used to decrypt the session.
+	Decryptor func(encryptedString, key string) (string, error)
+
+	// Adapter is the adapter used to store the session.
+	// Adapter adapters.Adapter
+	Adapter adapters.Adapter
 
 	// ErrorHandler is executed when an error is returned from fiber.Handler.
 	//
@@ -373,7 +258,10 @@ var ConfigDefault = Config{
 	BeginAuthHandler:    BeginAuthHandler{},
 	CompleteAuthHandler: CompleteAuthCompleteHandler{},
 	LogoutHandler:       LogoutHandler{},
-	Session:             NewSessionStore(session.New(defaultSessionConfig)),
+	Encryptor:           EncryptCookie,
+	Decryptor:           DecryptCookie,
+	Expiry:              "7h",
+	CookieName:          "fiber_goth.session",
 }
 
 // default ErrorHandler that process return error from fiber.Handler
@@ -386,12 +274,8 @@ func defaultResponseFilter(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-var defaultSessionConfig = session.Config{
-	KeyLookup:      fmt.Sprintf("cookie:%s", gothic.SessionName),
-	CookieHTTPOnly: true,
-}
-
 // Helper function to set default values
+// nolint:gocyclo
 func configDefault(config ...Config) Config {
 	if len(config) < 1 {
 		return ConfigDefault
@@ -402,10 +286,6 @@ func configDefault(config ...Config) Config {
 
 	if cfg.Next == nil {
 		cfg.Next = ConfigDefault.Next
-	}
-
-	if cfg.Session == nil {
-		cfg.Session = NewSessionStore(session.New(defaultSessionConfig))
 	}
 
 	if cfg.ResponseFilter == nil {
@@ -422,6 +302,26 @@ func configDefault(config ...Config) Config {
 
 	if cfg.LogoutHandler == nil {
 		cfg.LogoutHandler = ConfigDefault.LogoutHandler
+	}
+
+	if cfg.ErrorHandler == nil {
+		cfg.ErrorHandler = ConfigDefault.ErrorHandler
+	}
+
+	if cfg.Encryptor == nil {
+		cfg.Encryptor = ConfigDefault.Encryptor
+	}
+
+	if cfg.Decryptor == nil {
+		cfg.Decryptor = ConfigDefault.Decryptor
+	}
+
+	if cfg.Expiry == "" {
+		cfg.Expiry = ConfigDefault.Expiry
+	}
+
+	if cfg.CookieName == "" {
+		cfg.CookieName = ConfigDefault.CookieName
 	}
 
 	return cfg
