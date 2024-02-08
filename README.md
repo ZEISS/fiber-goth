@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Taylor Swift](https://img.shields.io/badge/secured%20by-taylor%20swift-brightgreen.svg)](https://twitter.com/SwiftOnSecurity)
 
-A [fiber](https://gofiber.io/) :rocket: middleware to integrate authentication to your application. It is based on a lightweight wrapper around [goth]([https://gofiber.io/](https://github.com/markbates/goth)https://github.com/markbates/goth).
+A [fiber](https://gofiber.io/) :rocket: middleware to integrate authentication to your application. It uses lightweight `adapters` and `providers` interfaces to integrate with multi-providers. 
 
 ## Installation
 
@@ -16,72 +16,7 @@ $ go get github.com/zeiss/fiber-goth
 
 ## Examples
 
-See [examples](https://github.com/zeiss/fiber-goth/tree/master/examples) to understand the provided interfaces.
-
-## Supported Providers
-
-* Amazon
-* Apple
-* Auth0
-* Azure AD
-* Battle.net
-* Bitbucket
-* Box
-* Cloud Foundry
-* Dailymotion
-* Deezer
-* DigitalOcean
-* Discord
-* Dropbox
-* Eve Online
-* Facebook
-* Fitbit
-* Gitea
-* GitHub
-* Gitlab
-* Google
-* Google+ (deprecated)
-* Heroku
-* InfluxCloud
-* Instagram
-* Intercom
-* Kakao
-* Lastfm
-* LINE
-* Linkedin
-* Mailru
-* Meetup
-* MicrosoftOnline
-* Naver
-* Nextcloud
-* Okta
-* OneDrive
-* OpenID Connect (auto discovery)
-* Oura
-* Patreon
-* Paypal
-* SalesForce
-* Shopify
-* Slack
-* Soundcloud
-* Spotify
-* Steam
-* Strava
-* Stripe
-* TikTok
-* Tumblr
-* Twitch
-* Twitter
-* Typetalk
-* Uber
-* VK
-* WeCom
-* Wepay
-* Xero
-* Yahoo
-* Yammer
-* Yandex
-* Zoom
+See [examples](https://github.com/zeiss/fiber-goth/tree/master/examples) to understand the provided interfaces
 
 ## License
 
