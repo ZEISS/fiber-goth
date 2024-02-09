@@ -71,21 +71,43 @@ func (SessionHandler) New(cfg Config) fiber.Handler {
 			return c.Next()
 		}
 
-		// cookie := c.Cookies(cfg.CookieName)
-		// if cookie == "" {
-		// 	return cfg.IndexHandler(c)
-		// }
+		cookie := c.Cookies(cfg.CookieName)
+		if cookie == "" {
+			return cfg.ErrorHandler(c, ErrMissingCookie)
+		}
 
-		// session, err := cfg.Adapter.GetSession(c.Context(), cookie)
-		// if err != nil {
-		// 	return cfg.ErrorHandler(c, err)
-		// }
+		session, err := cfg.Adapter.GetSession(c.Context(), cookie)
+		if err != nil {
+			return cfg.ErrorHandler(c, err)
+		}
 
-		// if !session.IsValid() {
-		// 	return cfg.IndexHandler(c)
-		// }
+		if !session.IsValid() {
+			cfg.ErrorHandler(c, err)
+		}
 
-		return c.Next()
+		duration, err := time.ParseDuration(cfg.Expiry)
+		if err != nil {
+			return cfg.ErrorHandler(c, err)
+		}
+		expires := time.Now().Add(duration)
+		session.ExpiresAt = expires
+
+		session, err = cfg.Adapter.RefreshSession(c.Context(), session)
+		if err != nil {
+			return cfg.ErrorHandler(c, err)
+		}
+
+		cookieValue := fasthttp.Cookie{}
+		cookieValue.SetKeyBytes([]byte(cfg.CookieName))
+		cookieValue.SetValueBytes([]byte(session.SessionToken))
+		cookieValue.SetHTTPOnly(true)
+		cookieValue.SetSameSite(fasthttp.CookieSameSiteLaxMode)
+		cookieValue.SetExpire(expires)
+		cookieValue.SetPath("/")
+
+		c.Response().Header.SetCookie(&cookieValue)
+
+		return c.JSON(session)
 	}
 }
 

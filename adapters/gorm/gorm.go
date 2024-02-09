@@ -56,7 +56,7 @@ func (a *gormAdapter) CreateUser(ctx context.Context, user adapters.User) (adapt
 // GetSession ...
 func (a *gormAdapter) GetSession(ctx context.Context, sessionToken string) (adapters.Session, error) {
 	var session adapters.Session
-	err := a.db.WithContext(ctx).Where("session_token = ?", sessionToken).First(&session).Error
+	err := a.db.WithContext(ctx).Preload("User").Where("session_token = ?", sessionToken).First(&session).Error
 	if err != nil {
 		return adapters.Session{}, err
 	}
@@ -89,6 +89,16 @@ func (a *gormAdapter) CreateSession(ctx context.Context, userID uuid.UUID, expir
 // DeleteSession ...
 func (a *gormAdapter) DeleteSession(ctx context.Context, sessionToken string) error {
 	return a.db.WithContext(ctx).Where("session_token = ?", sessionToken).Delete(&adapters.Session{}).Error
+}
+
+// RefreshSession ...
+func (a *gormAdapter) RefreshSession(ctx context.Context, session adapters.Session) (adapters.Session, error) {
+	err := a.db.WithContext(ctx).Model(&adapters.Session{}).Where("session_token = ?", session.SessionToken).Updates(&session).Error
+	if err != nil {
+		return adapters.Session{}, err
+	}
+
+	return session, nil
 }
 
 // DeleteUser ...

@@ -77,7 +77,7 @@ type Session struct {
 	ExpiresAt    time.Time `json:"expires_at"`
 	SessionToken string    `json:"session_token"`
 	UserID       uuid.UUID `json:"user_id"`
-	User         User      `json:"user" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	User         User      `json:"user"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -122,6 +122,8 @@ type Adapter interface {
 	GetSession(ctx context.Context, sessionToken string) (Session, error)
 	// UpdateSession updates a session.
 	UpdateSession(ctx context.Context, session Session) (Session, error)
+	// RefreshSession refreshes a session.
+	RefreshSession(ctx context.Context, session Session) (Session, error)
 	// DeleteSession deletes a session by session token.
 	DeleteSession(ctx context.Context, sessionToken string) error
 	// CreateVerificationToken creates a new verification token.
@@ -187,6 +189,11 @@ func (a *UnimplementedAdapter) GetSession(_ context.Context, sessionToken string
 
 // UpdateSession updates a session.
 func (a *UnimplementedAdapter) UpdateSession(_ context.Context, session Session) (Session, error) {
+	return Session{}, ErrUnimplemented
+}
+
+// RefreshSession refreshes a session.
+func (a *UnimplementedAdapter) RefreshSession(_ context.Context, session Session) (Session, error) {
 	return Session{}, ErrUnimplemented
 }
 
