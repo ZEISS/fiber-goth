@@ -86,6 +86,11 @@ func (a *gormAdapter) CreateSession(ctx context.Context, userID uuid.UUID, expir
 	return session, nil
 }
 
+// DeleteSession ...
+func (a *gormAdapter) DeleteSession(ctx context.Context, sessionToken string) error {
+	return a.db.WithContext(ctx).Where("session_token = ?", sessionToken).Delete(&adapters.Session{}).Error
+}
+
 // DeleteUser ...
 func (a *gormAdapter) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return a.db.WithContext(ctx).Where("id = ?", id).Delete(&adapters.User{}).Error
@@ -94,9 +99,4 @@ func (a *gormAdapter) DeleteUser(ctx context.Context, id uuid.UUID) error {
 // LinkAccount ...
 func (a *gormAdapter) LinkAccount(ctx context.Context, accountID, userID uuid.UUID) error {
 	return a.db.WithContext(ctx).Model(&adapters.Account{}).Where("id = ?", accountID).Update("user_id", userID).Error
-}
-
-// DeleteSession ...
-func (a *gormAdapter) DeleteSession(ctx context.Context, sessionToken string) error {
-	return a.db.WithContext(ctx).Where("session_token = ?", sessionToken).Delete(&adapters.Session{}).Error
 }

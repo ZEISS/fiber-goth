@@ -173,14 +173,13 @@ func run(ctx context.Context) error {
 	gothConfig := goth.Config{Adapter: ga, Secret: goth.GenerateKey()}
 	app.Use(goth.NewSessionHandler(gothConfig))
 
-	app.Get("/login/:provider", goth.NewBeginAuthHandler(gothConfig))
-	app.Get("/auth/:provider/callback", goth.NewCompleteAuthHandler(gothConfig))
-	app.Get("/logout", goth.NewLogoutHandler(gothConfig))
-
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/login", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
 		return t.Execute(c.Response().BodyWriter(), providerIndex)
 	})
+	app.Get("/login/:provider", goth.NewBeginAuthHandler(gothConfig))
+	app.Get("/auth/:provider/callback", goth.NewCompleteAuthHandler(gothConfig))
+	app.Get("/logout", goth.NewLogoutHandler(gothConfig))
 
 	if err := app.Listen("0.0.0.0:3000"); err != nil {
 		return err

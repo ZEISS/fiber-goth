@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/markbates/goth"
 	"github.com/valyala/fasthttp"
 	"github.com/zeiss/fiber-goth/adapters"
 	"github.com/zeiss/fiber-goth/providers"
@@ -33,15 +32,14 @@ func (p *Params) Get(key string) string {
 	return p.ctx.Query(key)
 }
 
-var _ goth.Params = (*Params)(nil)
-
 // The contextKey type is unexported to prevent collisions with context keys defined in
 // other packages.
 type contextKey int
 
 // The keys for the values in context
 const (
-	providerKey contextKey = 0
+	providerKey contextKey = iota
+	tokenKey
 )
 
 var (
@@ -49,6 +47,8 @@ var (
 	ErrMissingProviderName = errors.New("missing provider name in request")
 	// ErrMissingSession is thrown if there is no active session.
 	ErrMissingSession = errors.New("could not find a matching session for this request")
+	// ErrMissingCookie is thrown if the cookie is missing.
+	ErrMissingCookie = errors.New("missing session cookie")
 )
 
 const (
@@ -71,19 +71,19 @@ func (SessionHandler) New(cfg Config) fiber.Handler {
 			return c.Next()
 		}
 
-		cookie := c.Cookies(cfg.CookieName)
-		if cookie == "" {
-			return cfg.ErrorHandler(c, ErrMissingSession)
-		}
+		// cookie := c.Cookies(cfg.CookieName)
+		// if cookie == "" {
+		// 	return cfg.IndexHandler(c)
+		// }
 
-		session, err := cfg.Adapter.GetSession(c.Context(), cookie)
-		if err != nil {
-			return cfg.ErrorHandler(c, err)
-		}
+		// session, err := cfg.Adapter.GetSession(c.Context(), cookie)
+		// if err != nil {
+		// 	return cfg.ErrorHandler(c, err)
+		// }
 
-		if !session.IsValid() {
-			return fiber.ErrForbidden
-		}
+		// if !session.IsValid() {
+		// 	return cfg.IndexHandler(c)
+		// }
 
 		return c.Next()
 	}
@@ -180,8 +180,6 @@ func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 		}
 		expires := time.Now().Add(duration)
 
-		fmt.Println(expires)
-
 		session, err := cfg.Adapter.CreateSession(c.Context(), user.ID, expires)
 		if err != nil {
 			return cfg.ErrorHandler(c, err)
@@ -225,10 +223,17 @@ func (LogoutHandler) New(cfg Config) fiber.Handler {
 			return c.Next()
 		}
 
-		// err := cfg.Session.Destroy(c)
-		// if err != nil {
-		// 	return cfg.ErrorHandler(c, err)
-		// }
+		token, err := cfg.Extractor(c)
+		if err != nil {
+			return cfg.ErrorHandler(c, err)
+		}
+
+		err = cfg.Adapter.DeleteSession(c.Context(), token)
+		if err != nil {
+			return cfg.ErrorHandler(c, err)
+		}
+
+		c.ClearCookie(cfg.CookieName)
 
 		return cfg.ResponseFilter(c)
 	}
@@ -263,6 +268,9 @@ type Config struct {
 	// SessionHandler is the handler to manage the session.
 	SessionHandler GothHandler
 
+	// IndexHandler is the handler to display the index.
+	IndexHandler fiber.Handler
+
 	// Response filter that is executed when responses need to returned.
 	ResponseFilter func(c *fiber.Ctx) error
 
@@ -289,6 +297,9 @@ type Config struct {
 	//
 	// Optional. Default: DefaultErrorHandler
 	ErrorHandler fiber.ErrorHandler
+
+	// Extractor is the function used to extract the token from the request.
+	Extractor func(c *fiber.Ctx) (string, error)
 }
 
 // ConfigDefault is the default config.
@@ -299,10 +310,12 @@ var ConfigDefault = Config{
 	CompleteAuthHandler: CompleteAuthCompleteHandler{},
 	LogoutHandler:       LogoutHandler{},
 	SessionHandler:      SessionHandler{},
+	IndexHandler:        defaultIndexHandler,
 	Encryptor:           EncryptCookie,
 	Decryptor:           DecryptCookie,
 	Expiry:              "7h",
 	CookieName:          "fiber_goth.session",
+	Extractor:           TokenFromCookie("fiber_goth.session"),
 }
 
 // default ErrorHandler that process return error from fiber.Handler
@@ -313,6 +326,15 @@ func defaultErrorHandler(_ *fiber.Ctx, _ error) error {
 // default filter for response that process default return.
 func defaultResponseFilter(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
+}
+
+// default index handler that process default return.
+func defaultIndexHandler(c *fiber.Ctx) error {
+	if c.Path() == "/login" {
+		return c.Next()
+	}
+
+	return c.Redirect("/login", fiber.StatusTemporaryRedirect)
 }
 
 // Helper function to set default values
@@ -333,6 +355,10 @@ func configDefault(config ...Config) Config {
 		cfg.ResponseFilter = defaultResponseFilter
 	}
 
+	if cfg.Extractor == nil {
+		cfg.Extractor = ConfigDefault.Extractor
+	}
+
 	if cfg.BeginAuthHandler == nil {
 		cfg.BeginAuthHandler = ConfigDefault.BeginAuthHandler
 	}
@@ -351,6 +377,10 @@ func configDefault(config ...Config) Config {
 
 	if cfg.SessionHandler == nil {
 		cfg.SessionHandler = ConfigDefault.SessionHandler
+	}
+
+	if cfg.IndexHandler == nil {
+		cfg.IndexHandler = ConfigDefault.IndexHandler
 	}
 
 	if cfg.Encryptor == nil {
@@ -398,4 +428,26 @@ func generateRandomString(n int) ([]byte, error) {
 	}
 
 	return b, nil
+}
+
+// TokenFromContext returns the token from the request context.
+func TokenFromContext(c *fiber.Ctx) string {
+	token, ok := c.Locals(tokenKey).(string)
+	if !ok {
+		return ""
+	}
+
+	return token
+}
+
+// TokenFromCookie returns a function that extracts token from the cookie header.
+func TokenFromCookie(param string) func(c *fiber.Ctx) (string, error) {
+	return func(c *fiber.Ctx) (string, error) {
+		token := c.Cookies(param)
+		if token == "" {
+			return "", ErrMissingCookie
+		}
+
+		return token, nil
+	}
 }
