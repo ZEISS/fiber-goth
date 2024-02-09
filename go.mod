@@ -9,7 +9,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/katallaxie/pkg v0.5.12
 	github.com/markbates/goth v1.78.0
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.0
 	github.com/valyala/fasthttp v1.51.0
 	golang.org/x/oauth2 v0.17.0
 	gorm.io/driver/postgres v1.5.6
