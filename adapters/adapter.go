@@ -84,6 +84,11 @@ type Session struct {
 	DeletedAt *time.Time
 }
 
+// IsValid returns true if the session is valid.
+func (s Session) IsValid() bool {
+	return s.ExpiresAt.After(time.Now())
+}
+
 // VerificationToken ...
 type VerificationToken struct {
 	Token      string    `json:"token" gorm:"primaryKey"`
@@ -100,29 +105,29 @@ type Adapter interface {
 	// CreateUser creates a new user.
 	CreateUser(ctx context.Context, user User) (User, error)
 	// GetUser retrieves a user by ID.
-	GetUser(id uuid.UUID) (User, error)
+	GetUser(ctx context.Context, id uuid.UUID) (User, error)
 	// GetUserByEmail retrieves a user by email.
-	GetUserByEmail(email string) (User, error)
+	GetUserByEmail(ctx context.Context, email string) (User, error)
 	// UpdateUser updates a user.
-	UpdateUser(user User) (User, error)
+	UpdateUser(ctx context.Context, user User) (User, error)
 	// DeleteUser deletes a user by ID.
-	DeleteUser(id uuid.UUID) error
+	DeleteUser(ctx context.Context, id uuid.UUID) error
 	// LinkAccount links an account to a user.
-	LinkAccount(accountID, userID uuid.UUID) error
+	LinkAccount(ctx context.Context, accountID, userID uuid.UUID) error
 	// UnlinkAccount unlinks an account from a user.
-	UnlinkAccount(accountID, userID uuid.UUID) error
+	UnlinkAccount(ctx context.Context, accountID, userID uuid.UUID) error
 	// CreateSession creates a new session.
 	CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (Session, error)
 	// GetSession retrieves a session by session token.
-	GetSession(sessionToken string) (Session, error)
+	GetSession(ctx context.Context, sessionToken string) (Session, error)
 	// UpdateSession updates a session.
-	UpdateSession(session Session) (Session, error)
+	UpdateSession(ctx context.Context, session Session) (Session, error)
 	// DeleteSession deletes a session by session token.
-	DeleteSession(sessionToken string) error
+	DeleteSession(ctx context.Context, sessionToken string) error
 	// CreateVerificationToken creates a new verification token.
-	CreateVerificationToken(verficationToken VerificationToken) (VerificationToken, error)
+	CreateVerificationToken(ctx context.Context, verficationToken VerificationToken) (VerificationToken, error)
 	// UseVerficationToken uses a verification token.
-	UseVerficationToken(identifier string, token string) (VerificationToken, error)
+	UseVerficationToken(ctx context.Context, identifier string, token string) (VerificationToken, error)
 }
 
 var _ Adapter = (*UnimplementedAdapter)(nil)
@@ -136,73 +141,68 @@ func (a *UnimplementedAdapter) CreateUser(_ context.Context, user User) (User, e
 }
 
 // GetUser retrieves a user by ID.
-func (a *UnimplementedAdapter) GetUser(id uuid.UUID) (User, error) {
+func (a *UnimplementedAdapter) GetUser(_ context.Context, id uuid.UUID) (User, error) {
 	return User{}, ErrUnimplemented
 }
 
 // GetUserByEmail retrieves a user by email.
-func (a *UnimplementedAdapter) GetUserByEmail(email string) (User, error) {
+func (a *UnimplementedAdapter) GetUserByEmail(_ context.Context, email string) (User, error) {
 	return User{}, ErrUnimplemented
 }
 
 // GetUserByAccount retrieves a user by account.
-func (a *UnimplementedAdapter) GetUserByAccount(provider string, providerAccountID string) (User, error) {
+func (a *UnimplementedAdapter) GetUserByAccount(_ context.Context, provider string, providerAccountID string) (User, error) {
 	return User{}, ErrUnimplemented
 }
 
 // UpdateUser updates a user.
-func (a *UnimplementedAdapter) UpdateUser(user User) (User, error) {
+func (a *UnimplementedAdapter) UpdateUser(_ context.Context, user User) (User, error) {
 	return User{}, ErrUnimplemented
 }
 
 // DeleteUser deletes a user by ID.
-func (a *UnimplementedAdapter) DeleteUser(id uuid.UUID) error {
+func (a *UnimplementedAdapter) DeleteUser(_ context.Context, id uuid.UUID) error {
 	return ErrUnimplemented
 }
 
 // LinkAccount links an account to a user.
-func (a *UnimplementedAdapter) LinkAccount(accountID, userID uuid.UUID) error {
+func (a *UnimplementedAdapter) LinkAccount(_ context.Context, accountID, userID uuid.UUID) error {
 	return ErrUnimplemented
 }
 
 // UnlinkAccount unlinks an account from a user.
-func (a *UnimplementedAdapter) UnlinkAccount(accountID, userID uuid.UUID) error {
+func (a *UnimplementedAdapter) UnlinkAccount(_ context.Context, accountID, userID uuid.UUID) error {
 	return ErrUnimplemented
 }
 
 // CreateSession creates a new session.
-func (a *UnimplementedAdapter) CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (Session, error) {
+func (a *UnimplementedAdapter) CreateSession(_ context.Context, userID uuid.UUID, expires time.Time) (Session, error) {
 	return Session{}, ErrUnimplemented
 }
 
 // GetSession retrieves a session by session token.
-func (a *UnimplementedAdapter) GetSession(sessionToken string) (Session, error) {
+func (a *UnimplementedAdapter) GetSession(_ context.Context, sessionToken string) (Session, error) {
 	return Session{}, ErrUnimplemented
 }
 
 // UpdateSession updates a session.
-func (a *UnimplementedAdapter) UpdateSession(session Session) (Session, error) {
+func (a *UnimplementedAdapter) UpdateSession(_ context.Context, session Session) (Session, error) {
 	return Session{}, ErrUnimplemented
 }
 
 // DeleteSession deletes a session by session token.
-func (a *UnimplementedAdapter) DeleteSession(sessionToken string) error {
+func (a *UnimplementedAdapter) DeleteSession(_ context.Context, sessionToken string) error {
 	return ErrUnimplemented
 }
 
 // CreateVerificationToken creates a new verification token.
-func (a *UnimplementedAdapter) CreateVerificationToken(verficationToken VerificationToken) (VerificationToken, error) {
+func (a *UnimplementedAdapter) CreateVerificationToken(_ context.Context, erficationToken VerificationToken) (VerificationToken, error) {
 	return VerificationToken{}, ErrUnimplemented
 }
 
 // UseVerficationToken uses a verification token.
-func (a *UnimplementedAdapter) UseVerficationToken(identifier string, token string) (VerificationToken, error) {
+func (a *UnimplementedAdapter) UseVerficationToken(_ context.Context, identifier string, token string) (VerificationToken, error) {
 	return VerificationToken{}, ErrUnimplemented
-}
-
-// GetAccount retrieve by provider and provider account ID.
-func (a *UnimplementedAdapter) GetAccount(provider string, providerAccountID string) (Account, error) {
-	return Account{}, ErrUnimplemented
 }
 
 // StringPtr returns a pointer to the string value passed in.

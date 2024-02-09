@@ -53,10 +53,21 @@ func (a *gormAdapter) CreateUser(ctx context.Context, user adapters.User) (adapt
 	return user, nil
 }
 
+// GetSession ...
+func (a *gormAdapter) GetSession(ctx context.Context, sessionToken string) (adapters.Session, error) {
+	var session adapters.Session
+	err := a.db.WithContext(ctx).Where("session_token = ?", sessionToken).First(&session).Error
+	if err != nil {
+		return adapters.Session{}, err
+	}
+
+	return session, nil
+}
+
 // GetUser ...
-func (a *gormAdapter) GetUser(id uuid.UUID) (adapters.User, error) {
+func (a *gormAdapter) GetUser(ctx context.Context, id uuid.UUID) (adapters.User, error) {
 	var user adapters.User
-	err := a.db.Preload("Accounts").Where("id = ?", id).First(&user).Error
+	err := a.db.WithContext(ctx).Preload("Accounts").Where("id = ?", id).First(&user).Error
 	if err != nil {
 		return adapters.User{}, err
 	}
@@ -66,7 +77,7 @@ func (a *gormAdapter) GetUser(id uuid.UUID) (adapters.User, error) {
 
 // CreateSession ...
 func (a *gormAdapter) CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (adapters.Session, error) {
-	session := adapters.Session{UserID: userID, SessionToken: uuid.NewString()}
+	session := adapters.Session{UserID: userID, SessionToken: uuid.NewString(), ExpiresAt: expires}
 	err := a.db.WithContext(ctx).Create(&session).Error
 	if err != nil {
 		return adapters.Session{}, err
@@ -76,16 +87,16 @@ func (a *gormAdapter) CreateSession(ctx context.Context, userID uuid.UUID, expir
 }
 
 // DeleteUser ...
-func (a *gormAdapter) DeleteUser(id uuid.UUID) error {
-	return a.db.Where("id = ?", id).Delete(&adapters.User{}).Error
+func (a *gormAdapter) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	return a.db.WithContext(ctx).Where("id = ?", id).Delete(&adapters.User{}).Error
 }
 
 // LinkAccount ...
-func (a *gormAdapter) LinkAccount(accountID, userID uuid.UUID) error {
-	return a.db.Model(&adapters.Account{}).Where("id = ?", accountID).Update("user_id", userID).Error
+func (a *gormAdapter) LinkAccount(ctx context.Context, accountID, userID uuid.UUID) error {
+	return a.db.WithContext(ctx).Model(&adapters.Account{}).Where("id = ?", accountID).Update("user_id", userID).Error
 }
 
 // DeleteSession ...
-func (a *gormAdapter) DeleteSession(sessionToken string) error {
-	return a.db.Where("session_token = ?", sessionToken).Delete(&adapters.Session{}).Error
+func (a *gormAdapter) DeleteSession(ctx context.Context, sessionToken string) error {
+	return a.db.WithContext(ctx).Where("session_token = ?", sessionToken).Delete(&adapters.Session{}).Error
 }

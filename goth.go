@@ -61,6 +61,41 @@ func ProviderFromContext(c *fiber.Ctx) string {
 	return c.Get(fmt.Sprint(providerKey))
 }
 
+// SessionHandler is the default handler for the session.
+type SessionHandler struct{}
+
+// New creates a new handler to manage the session.
+func (SessionHandler) New(cfg Config) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		if cfg.Next != nil && cfg.Next(c) {
+			return c.Next()
+		}
+
+		cookie := c.Cookies(cfg.CookieName)
+		if cookie == "" {
+			return cfg.ErrorHandler(c, ErrMissingSession)
+		}
+
+		session, err := cfg.Adapter.GetSession(c.Context(), cookie)
+		if err != nil {
+			return cfg.ErrorHandler(c, err)
+		}
+
+		if !session.IsValid() {
+			return fiber.ErrForbidden
+		}
+
+		return c.Next()
+	}
+}
+
+// NewSessionHandler returns a new default session handler.
+func NewSessionHandler(config ...Config) fiber.Handler {
+	cfg := configDefault(config...)
+
+	return cfg.SessionHandler.New(cfg)
+}
+
 // BeginAuthHandler is the default handler to begin the authentication process.
 type BeginAuthHandler struct{}
 
@@ -86,7 +121,7 @@ func (BeginAuthHandler) New(cfg Config) fiber.Handler {
 			return err
 		}
 
-		intent, err := provider.BeginAuth(state)
+		intent, err := provider.BeginAuth(c.Context(), cfg.Adapter, state)
 		if err != nil {
 			return err
 		}
@@ -134,7 +169,7 @@ func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 			return cfg.ErrorHandler(c, err)
 		}
 
-		user, err := provider.CompleteAuth(c.Context(), &Params{ctx: c})
+		user, err := provider.CompleteAuth(c.Context(), cfg.Adapter, &Params{ctx: c})
 		if err != nil {
 			return cfg.ErrorHandler(c, err)
 		}
@@ -144,6 +179,8 @@ func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 			return cfg.ErrorHandler(c, err)
 		}
 		expires := time.Now().Add(duration)
+
+		fmt.Println(expires)
 
 		session, err := cfg.Adapter.CreateSession(c.Context(), user.ID, expires)
 		if err != nil {
@@ -223,6 +260,9 @@ type Config struct {
 	// LogoutHandler is the handler to logout.
 	LogoutHandler GothHandler
 
+	// SessionHandler is the handler to manage the session.
+	SessionHandler GothHandler
+
 	// Response filter that is executed when responses need to returned.
 	ResponseFilter func(c *fiber.Ctx) error
 
@@ -258,6 +298,7 @@ var ConfigDefault = Config{
 	BeginAuthHandler:    BeginAuthHandler{},
 	CompleteAuthHandler: CompleteAuthCompleteHandler{},
 	LogoutHandler:       LogoutHandler{},
+	SessionHandler:      SessionHandler{},
 	Encryptor:           EncryptCookie,
 	Decryptor:           DecryptCookie,
 	Expiry:              "7h",
@@ -306,6 +347,10 @@ func configDefault(config ...Config) Config {
 
 	if cfg.ErrorHandler == nil {
 		cfg.ErrorHandler = ConfigDefault.ErrorHandler
+	}
+
+	if cfg.SessionHandler == nil {
+		cfg.SessionHandler = ConfigDefault.SessionHandler
 	}
 
 	if cfg.Encryptor == nil {

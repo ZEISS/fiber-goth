@@ -88,7 +88,7 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	providers.RegisterProvider(github.New(ga, os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"), "http://localhost:3000/auth/github/callback"))
+	providers.RegisterProvider(github.New(os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"), "http://localhost:3000/auth/github/callback"))
 
 	m := map[string]string{
 		"amazon":          "Amazon",
@@ -171,6 +171,7 @@ func run(ctx context.Context) error {
 	}
 
 	gothConfig := goth.Config{Adapter: ga, Secret: goth.GenerateKey()}
+	app.Use(goth.NewSessionHandler(gothConfig))
 
 	app.Get("/login/:provider", goth.NewBeginAuthHandler(gothConfig))
 	app.Get("/auth/:provider/callback", goth.NewCompleteAuthHandler(gothConfig))

@@ -35,9 +35,9 @@ type Provider interface {
 	// Type returns the provider's type.
 	Type() ProviderType
 	// BeginAuth starts the authentication process.
-	BeginAuth(state string) (AuthIntent, error)
+	BeginAuth(ctx context.Context, adapter adapters.Adapter, state string) (AuthIntent, error)
 	// CompleteAuth completes the authentication process.
-	CompleteAuth(ctx context.Context, params AuthParams) (adapters.User, error)
+	CompleteAuth(ctx context.Context, adapter adapters.Adapter, params AuthParams) (adapters.User, error)
 }
 
 // AuthParams is the type of authentication parameters.
@@ -125,11 +125,11 @@ func (u *UnimplementedProvider) Debug(debug bool) {
 }
 
 // BeginAuth starts the authentication process.
-func (u *UnimplementedProvider) BeginAuth(state string) (AuthIntent, error) {
+func (u *UnimplementedProvider) BeginAuth(_ context.Context, _ adapters.Adapter, state string) (AuthIntent, error) {
 	return nil, ErrUnimplemented
 }
 
 // CompleteAuth completes the authentication process.
-func (u *UnimplementedProvider) CompleteAuth(ctx context.Context, params AuthParams) (adapters.User, error) {
+func (u *UnimplementedProvider) CompleteAuth(_ context.Context, _ adapters.Adapter, params AuthParams) (adapters.User, error) {
 	return adapters.User{}, ErrUnimplemented
 }

@@ -37,20 +37,18 @@ type githubProvider struct {
 	providerType providers.ProviderType
 	client       *http.Client
 	config       *oauth2.Config
-	adapter      adapters.Adapter
 
 	providers.UnimplementedProvider
 }
 
 // New creates a new GitHub provider.
-func New(adapter adapters.Adapter, clientKey, secret, callbackURL string, scopes ...string) *githubProvider {
+func New(clientKey, secret, callbackURL string, scopes ...string) *githubProvider {
 	p := &githubProvider{
 		id:           "github",
 		name:         "GitHub",
 		clientKey:    clientKey,
 		secret:       secret,
 		callbackURL:  callbackURL,
-		adapter:      adapter,
 		userURL:      UserURL,
 		emailURL:     EmailURL,
 		authURL:      AuthURL,
@@ -91,7 +89,7 @@ func (a *authIntent) GetAuthURL() (string, error) {
 }
 
 // BeginAuth starts the authentication process.
-func (g *githubProvider) BeginAuth(state string) (providers.AuthIntent, error) {
+func (g *githubProvider) BeginAuth(ctx context.Context, adapter adapters.Adapter, state string) (providers.AuthIntent, error) {
 	verifier := oauth2.GenerateVerifier()
 	url := g.config.AuthCodeURL(state, oauth2.S256ChallengeOption(verifier))
 
@@ -101,7 +99,7 @@ func (g *githubProvider) BeginAuth(state string) (providers.AuthIntent, error) {
 }
 
 // CompleteAuth completes the authentication process.
-func (g *githubProvider) CompleteAuth(ctx context.Context, params providers.AuthParams) (adapters.User, error) {
+func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adapter, params providers.AuthParams) (adapters.User, error) {
 	u := struct {
 		ID       int    `json:"id"`
 		Email    string `json:"email"`
@@ -157,12 +155,12 @@ func (g *githubProvider) CompleteAuth(ctx context.Context, params providers.Auth
 		},
 	}
 
-	user, err = g.adapter.CreateUser(ctx, user)
+	user, err = adapter.CreateUser(ctx, user)
 	if err != nil {
 		return adapters.User{}, err
 	}
 
-	user, err = g.adapter.GetUser(user.ID)
+	user, err = adapter.GetUser(ctx, user.ID)
 	if err != nil {
 		return adapters.User{}, err
 	}
