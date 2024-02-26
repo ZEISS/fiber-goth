@@ -170,7 +170,23 @@ func run(ctx context.Context) error {
 		log.Fatal(err)
 	}
 
-	gothConfig := goth.Config{Adapter: ga, Secret: goth.GenerateKey()}
+	gothConfig := goth.Config{
+		Adapter:        ga,
+		Secret:         goth.GenerateKey(),
+		CookieHTTPOnly: true,
+	}
+
+	app.Use(goth.NewProtectMiddleware(gothConfig))
+
+	app.Get("/", func(c *fiber.Ctx) error {
+		session, err := goth.SessionFromContext(c)
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(session)
+	})
+
 	app.Get("/login", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
 		return t.Execute(c.Response().BodyWriter(), providerIndex)
@@ -197,6 +213,8 @@ func main() {
 		panic(err)
 	}
 }
+
+var helloTemplate = `<div>Hello World</div>`
 
 var indexTemplate = `{{range $key,$value:=.Providers}}
     <p><a href="/login/{{$value}}">Log in with {{index $.ProvidersMap $value}}</a></p>

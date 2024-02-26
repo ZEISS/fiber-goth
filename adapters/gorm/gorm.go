@@ -53,7 +53,7 @@ func (a *gormAdapter) CreateUser(ctx context.Context, user adapters.User) (adapt
 	return user, nil
 }
 
-// GetSession ...
+// GetSession is a helper function to retrieve a session by session token.
 func (a *gormAdapter) GetSession(ctx context.Context, sessionToken string) (adapters.Session, error) {
 	var session adapters.Session
 	err := a.db.WithContext(ctx).Preload("User").Where("session_token = ?", sessionToken).First(&session).Error
@@ -64,7 +64,7 @@ func (a *gormAdapter) GetSession(ctx context.Context, sessionToken string) (adap
 	return session, nil
 }
 
-// GetUser ...
+// GetUser is a helper function to retrieve a user by ID.
 func (a *gormAdapter) GetUser(ctx context.Context, id uuid.UUID) (adapters.User, error) {
 	var user adapters.User
 	err := a.db.WithContext(ctx).Preload("Accounts").Where("id = ?", id).First(&user).Error
@@ -75,7 +75,7 @@ func (a *gormAdapter) GetUser(ctx context.Context, id uuid.UUID) (adapters.User,
 	return user, nil
 }
 
-// CreateSession ...
+// CreateSession is a helper function to create a new session.
 func (a *gormAdapter) CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (adapters.Session, error) {
 	session := adapters.Session{UserID: userID, SessionToken: uuid.NewString(), ExpiresAt: expires}
 	err := a.db.WithContext(ctx).Create(&session).Error
@@ -86,12 +86,12 @@ func (a *gormAdapter) CreateSession(ctx context.Context, userID uuid.UUID, expir
 	return session, nil
 }
 
-// DeleteSession ...
+// DeleteSession is a helper function to delete a session by session token.
 func (a *gormAdapter) DeleteSession(ctx context.Context, sessionToken string) error {
 	return a.db.WithContext(ctx).Where("session_token = ?", sessionToken).Delete(&adapters.Session{}).Error
 }
 
-// RefreshSession ...
+// RefreshSession is a helper function to refresh a session.
 func (a *gormAdapter) RefreshSession(ctx context.Context, session adapters.Session) (adapters.Session, error) {
 	err := a.db.WithContext(ctx).Model(&adapters.Session{}).Where("session_token = ?", session.SessionToken).Updates(&session).Error
 	if err != nil {
