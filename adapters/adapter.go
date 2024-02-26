@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 func init() {
@@ -35,11 +36,11 @@ const (
 	AccountTypeWebAuthn AccountType = "webauthn"
 )
 
-// Account ...
+// Account represents an account in a third-party identity provider.
 type Account struct {
 	ID                uuid.UUID   `json:"id" gorm:"primaryKey;type:uuid;column:id;default:gen_random_uuid();"`
-	Type              AccountType `json:"type"`
-	Provider          string      `json:"provider"`
+	Type              AccountType `json:"type" validate:"required"`
+	Provider          string      `json:"provider" validate:"required"`
 	ProviderAccountID *string     `json:"provider_account_id"`
 	RefreshToken      *string     `json:"refresh_token"`
 	AccessToken       *string     `json:"access_token"`
@@ -51,24 +52,24 @@ type Account struct {
 	UserID            *uuid.UUID  `json:"user_id"`
 	User              User        `json:"user" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	DeletedAt *time.Time `json:"deleted_at"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
-// User ...
+// User is a user of the application.
 type User struct {
 	ID            uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
-	Name          string    `json:"name"`
-	Email         string    `json:"email"`
+	Name          string    `json:"name" validate:"required,max=255"`
+	Email         string    `json:"email" gorm:"uniqueIndex" validate:"required,email"`
 	EmailVerified *bool     `json:"email_verified"`
-	Image         *string   `json:"image"`
+	Image         *string   `json:"image" validate:"url"`
 	Accounts      []Account `json:"accounts" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	Sessions      []Session `json:"sessions" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	DeletedAt *time.Time `json:"deleted_at"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
 // Session ...
@@ -79,13 +80,13 @@ type Session struct {
 	UserID       uuid.UUID `json:"user_id"`
 	User         User      `json:"user"`
 
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	DeletedAt *time.Time
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
 // IsValid returns true if the session is valid.
-func (s Session) IsValid() bool {
+func (s *Session) IsValid() bool {
 	return s.ExpiresAt.After(time.Now())
 }
 
@@ -95,9 +96,9 @@ type VerificationToken struct {
 	Identifier string    `json:"identifier"`
 	ExpiresAt  time.Time `json:"expires_at"`
 
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	DeletedAt *time.Time `json:"deleted_at"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
 // Adapter is an interface that defines the methods for interacting with the underlying data storage.
