@@ -11,10 +11,10 @@ import (
 )
 
 func init() {
-	gob.Register(&Account{})
-	gob.Register(&User{})
-	gob.Register(&Session{})
-	gob.Register(&VerificationToken{})
+	gob.Register(&GothAccount{})
+	gob.Register(&GothUser{})
+	gob.Register(&GothSession{})
+	gob.Register(&GothVerificationToken{})
 }
 
 // AccountType represents the type of an account.
@@ -36,8 +36,8 @@ const (
 	AccountTypeWebAuthn AccountType = "webauthn"
 )
 
-// Account represents an account in a third-party identity provider.
-type Account struct {
+// GothAccount represents an account in a third-party identity provider.
+type GothAccount struct {
 	ID                uuid.UUID   `json:"id" gorm:"primaryKey;type:uuid;column:id;default:gen_random_uuid();"`
 	Type              AccountType `json:"type" validate:"required"`
 	Provider          string      `json:"provider" validate:"required"`
@@ -50,35 +50,35 @@ type Account struct {
 	IDToken           *string     `json:"id_token"`
 	SessionState      string      `json:"session_state"`
 	UserID            *uuid.UUID  `json:"user_id"`
-	User              User        `json:"user" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	User              GothUser    `json:"user" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
-// User is a user of the application.
-type User struct {
-	ID            uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
-	Name          string    `json:"name" validate:"required,max=255"`
-	Email         string    `json:"email" gorm:"uniqueIndex" validate:"required,email"`
-	EmailVerified *bool     `json:"email_verified"`
-	Image         *string   `json:"image" validate:"url"`
-	Accounts      []Account `json:"accounts" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	Sessions      []Session `json:"sessions" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+// GothUser is a user of the application.
+type GothUser struct {
+	ID            uuid.UUID     `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
+	Name          string        `json:"name" validate:"required,max=255"`
+	Email         string        `json:"email" gorm:"uniqueIndex" validate:"required,email"`
+	EmailVerified *bool         `json:"email_verified"`
+	Image         *string       `json:"image" validate:"url"`
+	Accounts      []GothAccount `json:"accounts" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Sessions      []GothSession `json:"sessions" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
-// Session ...
-type Session struct {
+// GothSession is a session for a user.
+type GothSession struct {
 	ID           uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
 	ExpiresAt    time.Time `json:"expires_at"`
 	SessionToken string    `json:"session_token"`
 	UserID       uuid.UUID `json:"user_id"`
-	User         User      `json:"user"`
+	User         GothUser  `json:"user"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
@@ -86,12 +86,12 @@ type Session struct {
 }
 
 // IsValid returns true if the session is valid.
-func (s *Session) IsValid() bool {
+func (s *GothSession) IsValid() bool {
 	return s.ExpiresAt.After(time.Now())
 }
 
-// VerificationToken ...
-type VerificationToken struct {
+// GothVerificationToken is a verification token for a user
+type GothVerificationToken struct {
 	Token      string    `json:"token" gorm:"primaryKey"`
 	Identifier string    `json:"identifier"`
 	ExpiresAt  time.Time `json:"expires_at"`
@@ -104,13 +104,13 @@ type VerificationToken struct {
 // Adapter is an interface that defines the methods for interacting with the underlying data storage.
 type Adapter interface {
 	// CreateUser creates a new user.
-	CreateUser(ctx context.Context, user User) (User, error)
+	CreateUser(ctx context.Context, user GothUser) (GothUser, error)
 	// GetUser retrieves a user by ID.
-	GetUser(ctx context.Context, id uuid.UUID) (User, error)
+	GetUser(ctx context.Context, id uuid.UUID) (GothUser, error)
 	// GetUserByEmail retrieves a user by email.
-	GetUserByEmail(ctx context.Context, email string) (User, error)
+	GetUserByEmail(ctx context.Context, email string) (GothUser, error)
 	// UpdateUser updates a user.
-	UpdateUser(ctx context.Context, user User) (User, error)
+	UpdateUser(ctx context.Context, user GothUser) (GothUser, error)
 	// DeleteUser deletes a user by ID.
 	DeleteUser(ctx context.Context, id uuid.UUID) error
 	// LinkAccount links an account to a user.
@@ -118,19 +118,19 @@ type Adapter interface {
 	// UnlinkAccount unlinks an account from a user.
 	UnlinkAccount(ctx context.Context, accountID, userID uuid.UUID) error
 	// CreateSession creates a new session.
-	CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (Session, error)
+	CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (GothSession, error)
 	// GetSession retrieves a session by session token.
-	GetSession(ctx context.Context, sessionToken string) (Session, error)
+	GetSession(ctx context.Context, sessionToken string) (GothSession, error)
 	// UpdateSession updates a session.
-	UpdateSession(ctx context.Context, session Session) (Session, error)
+	UpdateSession(ctx context.Context, session GothSession) (GothSession, error)
 	// RefreshSession refreshes a session.
-	RefreshSession(ctx context.Context, session Session) (Session, error)
+	RefreshSession(ctx context.Context, session GothSession) (GothSession, error)
 	// DeleteSession deletes a session by session token.
 	DeleteSession(ctx context.Context, sessionToken string) error
 	// CreateVerificationToken creates a new verification token.
-	CreateVerificationToken(ctx context.Context, verficationToken VerificationToken) (VerificationToken, error)
+	CreateVerificationToken(ctx context.Context, verficationToken GothVerificationToken) (GothVerificationToken, error)
 	// UseVerficationToken uses a verification token.
-	UseVerficationToken(ctx context.Context, identifier string, token string) (VerificationToken, error)
+	UseVerficationToken(ctx context.Context, identifier string, token string) (GothVerificationToken, error)
 }
 
 var _ Adapter = (*UnimplementedAdapter)(nil)
@@ -139,28 +139,28 @@ var _ Adapter = (*UnimplementedAdapter)(nil)
 type UnimplementedAdapter struct{}
 
 // CreateUser creates a new user.
-func (a *UnimplementedAdapter) CreateUser(_ context.Context, user User) (User, error) {
-	return User{}, ErrUnimplemented
+func (a *UnimplementedAdapter) CreateUser(_ context.Context, user GothUser) (GothUser, error) {
+	return GothUser{}, ErrUnimplemented
 }
 
 // GetUser retrieves a user by ID.
-func (a *UnimplementedAdapter) GetUser(_ context.Context, id uuid.UUID) (User, error) {
-	return User{}, ErrUnimplemented
+func (a *UnimplementedAdapter) GetUser(_ context.Context, id uuid.UUID) (GothUser, error) {
+	return GothUser{}, ErrUnimplemented
 }
 
 // GetUserByEmail retrieves a user by email.
-func (a *UnimplementedAdapter) GetUserByEmail(_ context.Context, email string) (User, error) {
-	return User{}, ErrUnimplemented
+func (a *UnimplementedAdapter) GetUserByEmail(_ context.Context, email string) (GothUser, error) {
+	return GothUser{}, ErrUnimplemented
 }
 
 // GetUserByAccount retrieves a user by account.
-func (a *UnimplementedAdapter) GetUserByAccount(_ context.Context, provider string, providerAccountID string) (User, error) {
-	return User{}, ErrUnimplemented
+func (a *UnimplementedAdapter) GetUserByAccount(_ context.Context, provider string, providerAccountID string) (GothUser, error) {
+	return GothUser{}, ErrUnimplemented
 }
 
 // UpdateUser updates a user.
-func (a *UnimplementedAdapter) UpdateUser(_ context.Context, user User) (User, error) {
-	return User{}, ErrUnimplemented
+func (a *UnimplementedAdapter) UpdateUser(_ context.Context, user GothUser) (GothUser, error) {
+	return GothUser{}, ErrUnimplemented
 }
 
 // DeleteUser deletes a user by ID.
@@ -179,23 +179,23 @@ func (a *UnimplementedAdapter) UnlinkAccount(_ context.Context, accountID, userI
 }
 
 // CreateSession creates a new session.
-func (a *UnimplementedAdapter) CreateSession(_ context.Context, userID uuid.UUID, expires time.Time) (Session, error) {
-	return Session{}, ErrUnimplemented
+func (a *UnimplementedAdapter) CreateSession(_ context.Context, userID uuid.UUID, expires time.Time) (GothSession, error) {
+	return GothSession{}, ErrUnimplemented
 }
 
 // GetSession retrieves a session by session token.
-func (a *UnimplementedAdapter) GetSession(_ context.Context, sessionToken string) (Session, error) {
-	return Session{}, ErrUnimplemented
+func (a *UnimplementedAdapter) GetSession(_ context.Context, sessionToken string) (GothSession, error) {
+	return GothSession{}, ErrUnimplemented
 }
 
 // UpdateSession updates a session.
-func (a *UnimplementedAdapter) UpdateSession(_ context.Context, session Session) (Session, error) {
-	return Session{}, ErrUnimplemented
+func (a *UnimplementedAdapter) UpdateSession(_ context.Context, session GothSession) (GothSession, error) {
+	return GothSession{}, ErrUnimplemented
 }
 
 // RefreshSession refreshes a session.
-func (a *UnimplementedAdapter) RefreshSession(_ context.Context, session Session) (Session, error) {
-	return Session{}, ErrUnimplemented
+func (a *UnimplementedAdapter) RefreshSession(_ context.Context, session GothSession) (GothSession, error) {
+	return GothSession{}, ErrUnimplemented
 }
 
 // DeleteSession deletes a session by session token.
@@ -204,13 +204,13 @@ func (a *UnimplementedAdapter) DeleteSession(_ context.Context, sessionToken str
 }
 
 // CreateVerificationToken creates a new verification token.
-func (a *UnimplementedAdapter) CreateVerificationToken(_ context.Context, erficationToken VerificationToken) (VerificationToken, error) {
-	return VerificationToken{}, ErrUnimplemented
+func (a *UnimplementedAdapter) CreateVerificationToken(_ context.Context, erficationToken GothVerificationToken) (GothVerificationToken, error) {
+	return GothVerificationToken{}, ErrUnimplemented
 }
 
 // UseVerficationToken uses a verification token.
-func (a *UnimplementedAdapter) UseVerficationToken(_ context.Context, identifier string, token string) (VerificationToken, error) {
-	return VerificationToken{}, ErrUnimplemented
+func (a *UnimplementedAdapter) UseVerficationToken(_ context.Context, identifier string, token string) (GothVerificationToken, error) {
+	return GothVerificationToken{}, ErrUnimplemented
 }
 
 // StringPtr returns a pointer to the string value passed in.

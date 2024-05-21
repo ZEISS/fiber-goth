@@ -99,7 +99,7 @@ func (g *githubProvider) BeginAuth(ctx context.Context, adapter adapters.Adapter
 }
 
 // CompleteAuth completes the authentication process.
-func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adapter, params providers.AuthParams) (adapters.User, error) {
+func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adapter, params providers.AuthParams) (adapters.GothUser, error) {
 	u := struct {
 		ID       int    `json:"id"`
 		Email    string `json:"email"`
@@ -112,37 +112,37 @@ func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adap
 
 	code := params.Get("code")
 	if code == "" {
-		return adapters.User{}, adapters.ErrUnimplemented
+		return adapters.GothUser{}, adapters.ErrUnimplemented
 	}
 
 	token, err := g.config.Exchange(ctx, code)
 	if err != nil {
-		return adapters.User{}, err
+		return adapters.GothUser{}, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", g.userURL, nil)
 	if err != nil {
-		return adapters.User{}, err
+		return adapters.GothUser{}, err
 	}
 	req.Header.Add("Authorization", "Bearer "+token.AccessToken)
 
 	resp, err := g.client.Do(req)
 	if err != nil {
-		return adapters.User{}, err
+		return adapters.GothUser{}, err
 	}
 	defer io.Copy(io.Discard, resp.Body) // equivalent to `cp body /dev/null`
 	defer resp.Body.Close()
 
 	err = json.NewDecoder(resp.Body).Decode(&u)
 	if err != nil {
-		return adapters.User{}, err
+		return adapters.GothUser{}, err
 	}
 
-	user := adapters.User{
+	user := adapters.GothUser{
 		Name:  u.Name,
 		Email: u.Email,
 		Image: &u.Picture,
-		Accounts: []adapters.Account{
+		Accounts: []adapters.GothAccount{
 			{
 				Type:              adapters.AccountTypeOAuth2,
 				Provider:          g.ID(),
@@ -157,12 +157,12 @@ func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adap
 
 	user, err = adapter.CreateUser(ctx, user)
 	if err != nil {
-		return adapters.User{}, err
+		return adapters.GothUser{}, err
 	}
 
 	user, err = adapter.GetUser(ctx, user.ID)
 	if err != nil {
-		return adapters.User{}, err
+		return adapters.GothUser{}, err
 	}
 
 	return user, nil

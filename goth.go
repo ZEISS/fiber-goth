@@ -411,10 +411,10 @@ func ContextWithProvider(ctx *fiber.Ctx, provider string) *fiber.Ctx {
 }
 
 // Session from the request context.
-func SessionFromContext(c *fiber.Ctx) (adapters.Session, error) {
-	session, ok := c.Locals(sessionKey).(adapters.Session)
+func SessionFromContext(c *fiber.Ctx) (adapters.GothSession, error) {
+	session, ok := c.Locals(sessionKey).(adapters.GothSession)
 	if !ok {
-		return adapters.Session{}, ErrMissingSession
+		return adapters.GothSession{}, ErrMissingSession
 	}
 
 	return session, nil
