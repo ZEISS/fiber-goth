@@ -1,10 +1,10 @@
 module tools
 
 go 1.21
-toolchain go1.22.2
+toolchain go1.22.3
 
 require (
-	github.com/deepmap/oapi-codegen/v2 v2.1.0
+	github.com/deepmap/oapi-codegen/v2 v2.2.0
 	github.com/golang/mock v1.6.0
 	github.com/golangci/golangci-lint v1.59.0
 	github.com/goreleaser/goreleaser v1.26.2
@@ -161,7 +161,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
-	github.com/getkin/kin-openapi v0.122.0 // indirect
+	github.com/getkin/kin-openapi v0.124.0 // indirect
 	github.com/ghostiam/protogetter v0.3.6 // indirect
 	github.com/github/smimesign v0.2.0 // indirect
 	github.com/go-critic/go-critic v0.11.4 // indirect
