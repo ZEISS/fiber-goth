@@ -7,13 +7,14 @@ package goth
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"math/big"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/utils"
 	"github.com/valyala/fasthttp"
 	"github.com/zeiss/fiber-goth/adapters"
 	"github.com/zeiss/fiber-goth/providers"
@@ -45,13 +46,44 @@ const (
 	userIDKey
 )
 
+// Error is the default error type for the goth middleware.
+type Error struct {
+	Code    int
+	Message string
+}
+
+// Error makes it compatible with the `error` interface.
+func (e *Error) Error() string {
+	return e.Message
+}
+
+// NewError creates a new Error instance with an optional message
+func NewError(code int, message ...string) *Error {
+	err := &Error{
+		Code:    code,
+		Message: utils.StatusMessage(code),
+	}
+
+	if len(message) > 0 {
+		err.Message = message[0]
+	}
+
+	return err
+}
+
 var (
 	// ErrMissingProviderName is thrown if the provider cannot be determined.
-	ErrMissingProviderName = errors.New("missing provider name in request")
+	ErrMissingProviderName = NewError(http.StatusBadRequest, "missing provider name in request")
 	// ErrMissingSession is thrown if there is no active session.
-	ErrMissingSession = errors.New("could not find a matching session for this request")
+	ErrMissingSession = NewError(http.StatusBadRequest, "could not find a matching session for this request")
+	// ErrBadSession is thrown if the session is invalid.
+	ErrBadSession = NewError(http.StatusBadRequest, "session is invalid")
+	// ErrMissingUser is thrown if the user is missing.
+	ErrMissingUser = NewError(http.StatusBadRequest, "missing user")
 	// ErrMissingCookie is thrown if the cookie is missing.
-	ErrMissingCookie = errors.New("missing session cookie")
+	ErrMissingCookie = NewError(http.StatusBadRequest, "missing session cookie")
+	// ErrBadRequest is thrown if the request is invalid.
+	ErrBadRequest = NewError(http.StatusBadRequest, "bad request")
 )
 
 const (
@@ -220,7 +252,7 @@ func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 
 		c.Response().Header.SetCookie(&cookieValue)
 
-		return cfg.ResponseFilter(c)
+		return cfg.CompletionFilter(c)
 	}
 }
 
@@ -260,7 +292,7 @@ func (LogoutHandler) New(cfg Config) fiber.Handler {
 
 		c.ClearCookie(cfg.CookieName)
 
-		return cfg.ResponseFilter(c)
+		return cfg.CompletionFilter(c)
 	}
 }
 
@@ -291,17 +323,13 @@ func NewProtectMiddleware(config ...Config) fiber.Handler {
 		}
 
 		token, err := cfg.Extractor(c)
-		if errors.Is(err, ErrMissingCookie) {
-			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
-		}
-
 		if err != nil {
-			return cfg.ErrorHandler(c, err)
+			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
 		}
 
 		session, err := cfg.Adapter.GetSession(c.Context(), token)
 		if err != nil {
-			return cfg.ErrorHandler(c, err)
+			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
 		}
 
 		if !session.IsValid() {
@@ -310,14 +338,14 @@ func NewProtectMiddleware(config ...Config) fiber.Handler {
 
 		duration, err := time.ParseDuration(cfg.Expiry)
 		if err != nil {
-			return cfg.ErrorHandler(c, err)
+			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
 		}
 		expires := time.Now().Add(duration)
 		session.ExpiresAt = expires
 
 		session, err = cfg.Adapter.RefreshSession(c.Context(), session)
 		if err != nil {
-			return cfg.ErrorHandler(c, err)
+			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
 		}
 
 		cookieValue := fasthttp.Cookie{}
@@ -351,17 +379,13 @@ func NewProtectedHandler(handler fiber.Handler, config ...Config) fiber.Handler 
 		}
 
 		token, err := cfg.Extractor(c)
-		if errors.Is(err, ErrMissingCookie) {
-			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
-		}
-
 		if err != nil {
-			return cfg.ErrorHandler(c, err)
+			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
 		}
 
 		session, err := cfg.Adapter.GetSession(c.Context(), token)
 		if err != nil {
-			return cfg.ErrorHandler(c, err)
+			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
 		}
 
 		if !session.IsValid() {
@@ -370,14 +394,14 @@ func NewProtectedHandler(handler fiber.Handler, config ...Config) fiber.Handler 
 
 		duration, err := time.ParseDuration(cfg.Expiry)
 		if err != nil {
-			return cfg.ErrorHandler(c, err)
+			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
 		}
 		expires := time.Now().Add(duration)
 		session.ExpiresAt = expires
 
 		session, err = cfg.Adapter.RefreshSession(c.Context(), session)
 		if err != nil {
-			return cfg.ErrorHandler(c, err)
+			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
 		}
 
 		cookieValue := fasthttp.Cookie{}
@@ -443,8 +467,8 @@ type Config struct {
 	// ProtectedHandler is the handler to protect the route.
 	ProtectedHandler fiber.Handler
 
-	// Response filter that is executed when responses need to returned.
-	ResponseFilter func(c *fiber.Ctx) error
+	// CompletionFilter that is executed when responses need to returned.
+	CompletionFilter func(c *fiber.Ctx) error
 
 	// Secret is the secret used to sign the session.
 	Secret string
@@ -486,6 +510,9 @@ type Config struct {
 	// CallbackURL is the URL to redirect to when the user logs out.
 	CallbackURL string
 
+	// CompletionURL is the default url after completion
+	CompletionURL string
+
 	// ErrorHandler is executed when an error is returned from fiber.Handler.
 	//
 	// Optional. Default: DefaultErrorHandler
@@ -498,7 +525,6 @@ type Config struct {
 // ConfigDefault is the default config.
 var ConfigDefault = Config{
 	ErrorHandler:        defaultErrorHandler,
-	ResponseFilter:      defaultResponseFilter,
 	BeginAuthHandler:    BeginAuthHandler{},
 	CompleteAuthHandler: CompleteAuthCompleteHandler{},
 	LogoutHandler:       LogoutHandler{},
@@ -510,6 +536,7 @@ var ConfigDefault = Config{
 	CookieName:          "fiber_goth.session",
 	Extractor:           TokenFromCookie("fiber_goth.session"),
 	CookieSameSite:      fasthttp.CookieSameSiteLaxMode,
+	CompletionURL:       "/",
 	LoginURL:            "/login",
 	LogoutURL:           "/logout",
 	CallbackURL:         "/auth",
@@ -521,8 +548,10 @@ func defaultErrorHandler(_ *fiber.Ctx, _ error) error {
 }
 
 // default filter for response that process default return.
-func defaultResponseFilter(c *fiber.Ctx) error {
-	return c.SendStatus(fiber.StatusOK)
+func defaultCompletionFilter(completionURL string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return c.Redirect(completionURL, fiber.StatusTemporaryRedirect)
+	}
 }
 
 // default index handler that process default return.
@@ -548,10 +577,6 @@ func configDefault(config ...Config) Config {
 		cfg.Next = ConfigDefault.Next
 	}
 
-	if cfg.ResponseFilter == nil {
-		cfg.ResponseFilter = defaultResponseFilter
-	}
-
 	if cfg.Extractor == nil {
 		cfg.Extractor = ConfigDefault.Extractor
 	}
@@ -566,10 +591,6 @@ func configDefault(config ...Config) Config {
 
 	if cfg.LogoutHandler == nil {
 		cfg.LogoutHandler = ConfigDefault.LogoutHandler
-	}
-
-	if cfg.ErrorHandler == nil {
-		cfg.ErrorHandler = ConfigDefault.ErrorHandler
 	}
 
 	if cfg.SessionHandler == nil {
@@ -608,8 +629,20 @@ func configDefault(config ...Config) Config {
 		cfg.LogoutURL = ConfigDefault.LogoutURL
 	}
 
+	if cfg.CompletionURL == "" {
+		cfg.CompletionURL = ConfigDefault.CompletionURL
+	}
+
 	if cfg.CallbackURL == "" {
 		cfg.CallbackURL = ConfigDefault.CallbackURL
+	}
+
+	if cfg.ErrorHandler == nil {
+		cfg.ErrorHandler = ConfigDefault.ErrorHandler
+	}
+
+	if cfg.CompletionFilter == nil {
+		cfg.CompletionFilter = defaultCompletionFilter(cfg.CompletionURL)
 	}
 
 	return cfg
