@@ -38,50 +38,83 @@ const (
 
 // GothAccount represents an account in a third-party identity provider.
 type GothAccount struct {
-	ID                uuid.UUID   `json:"id" gorm:"primaryKey;type:uuid;column:id;default:gen_random_uuid();"`
-	Type              AccountType `json:"type" validate:"required"`
-	Provider          string      `json:"provider" validate:"required"`
-	ProviderAccountID *string     `json:"provider_account_id"`
-	RefreshToken      *string     `json:"refresh_token"`
-	AccessToken       *string     `json:"access_token"`
-	ExpiresAt         *time.Time  `json:"expires_at"`
-	TokenType         *string     `json:"token_type"`
-	Scope             *string     `json:"scope"`
-	IDToken           *string     `json:"id_token"`
-	SessionState      string      `json:"session_state"`
-	UserID            *uuid.UUID  `json:"user_id"`
-	User              GothUser    `json:"user" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	// ID is the unique identifier of the account.
+	ID uuid.UUID `json:"id" gorm:"primaryKey;type:uuid;column:id;default:gen_random_uuid();"`
+	// Type is the type of the account.
+	Type AccountType `json:"type" validate:"required"`
+	// Provider is the provider of the account.
+	Provider string `json:"provider" validate:"required"`
+	// ProviderAccountID is the account ID in the provider.
+	ProviderAccountID *string `json:"provider_account_id"`
+	// RefreshToken is the refresh token of the account.
+	RefreshToken *string `json:"refresh_token"`
+	// AccessToken is the access token of the account.
+	AccessToken *string `json:"access_token"`
+	// ExpiresAt is the expiry time of the account.
+	ExpiresAt *time.Time `json:"expires_at"`
+	// TokenType is the token type of the account.
+	TokenType *string `json:"token_type"`
+	// Scope is the scope of the account.
+	Scope *string `json:"scope"`
+	// IDToken is the ID token of the account.
+	IDToken *string `json:"id_token"`
+	// SessionState is the session state of the account.
+	SessionState string `json:"session_state"`
+	// UserID is the user ID of the account.
+	UserID *uuid.UUID `json:"user_id"`
+	//  User is the user of the account.
+	User GothUser `json:"user" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	// CreatedAt is the creation time of the account.
+	CreatedAt time.Time `json:"created_at"`
+	// UpdatedAt is the update time of the account.
+	UpdatedAt time.Time `json:"updated_at"`
+	// DeletedAt is the deletion time of the account.
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
 // GothUser is a user of the application.
 type GothUser struct {
-	ID            uuid.UUID     `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
-	Name          string        `json:"name" validate:"required,max=255"`
-	Email         string        `json:"email" gorm:"uniqueIndex" validate:"required,email"`
-	EmailVerified *bool         `json:"email_verified"`
-	Image         *string       `json:"image" validate:"url"`
-	Accounts      []GothAccount `json:"accounts" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	Sessions      []GothSession `json:"sessions" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	// ID is the unique identifier of the user.
+	ID uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
+	// Name is the name of the user.
+	Name string `json:"name" validate:"required,max=255"`
+	// Email is the email of the user.
+	Email string `json:"email" gorm:"uniqueIndex" validate:"required,email"`
+	// EmailVerified is true if the email is verified.
+	EmailVerified *bool `json:"email_verified"`
+	// Image is the image URL of the user.
+	Image *string `json:"image" validate:"url"`
+	// Password is the password of the user.
+	Accounts []GothAccount `json:"accounts" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	// Sessions are the sessions of the user.
+	Sessions []GothSession `json:"sessions" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	// Teams are the teams the user is a member of.
+	Teams *[]GothTeam `json:"teams" gorm:"many2many:team_users"`
+	// CreatedAt is the creation time of the user.
+	CreatedAt time.Time `json:"created_at"`
+	// UpdatedAt is the update time of the user.
+	UpdatedAt time.Time `json:"updated_at"`
+	// DeletedAt is the deletion time of the user.
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
 // GothSession is a session for a user.
 type GothSession struct {
-	ID           uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
-	ExpiresAt    time.Time `json:"expires_at"`
-	SessionToken string    `json:"session_token"`
-	UserID       uuid.UUID `json:"user_id"`
-	User         GothUser  `json:"user"`
-
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	// ID is the unique identifier of the session.
+	ID uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
+	// SessionToken is the token of the session.
+	SessionToken string `json:"session_token"`
+	// UserID is the user ID of the session.
+	UserID uuid.UUID `json:"user_id"`
+	// User is the user of the session.
+	User GothUser `json:"user"`
+	// ExpiresAt is the expiry time of the session.
+	ExpiresAt time.Time `json:"expires_at"`
+	// CreatedAt is the creation time of the session.
+	CreatedAt time.Time `json:"created_at"`
+	// UpdatedAt is the update time of the session.
+	UpdatedAt time.Time `json:"updated_at"`
+	// DeletedAt is the deletion time of the session.
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
@@ -92,12 +125,59 @@ func (s *GothSession) IsValid() bool {
 
 // GothVerificationToken is a verification token for a user
 type GothVerificationToken struct {
-	Token      string    `json:"token" gorm:"primaryKey"`
-	Identifier string    `json:"identifier"`
-	ExpiresAt  time.Time `json:"expires_at"`
+	// Token is the unique identifier of the token.
+	Token string `json:"token" gorm:"primaryKey"`
+	// Identifier is the identifier of the token.
+	Identifier string `json:"identifier"`
+	// ExpiresAt is the expiry time of the token.
+	ExpiresAt time.Time `json:"expires_at"`
+	// CreatedAt is the creation time of the token.
+	CreatedAt time.Time `json:"created_at"`
+	// UpdatedAt is the update time of the token.
+	UpdatedAt time.Time `json:"updated_at"`
+	// DeletedAt is the deletion time of the token.
+	DeletedAt gorm.DeletedAt `json:"deleted_at"`
+}
 
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+// GothTeam is a team in the application.
+type GothTeam struct {
+	// ID is the unique identifier of the team.
+	ID uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
+	// Name is the name of the team.
+	Name string `json:"name" validate:"required,max=255"`
+	// Slug is the slug of the team.
+	Slug string `json:"slug" validate:"required,min=3,max=255"`
+	// Description is the description of the team.
+	Description string `json:"description" validate:"max=255"`
+	// Users are the users in the team.
+	Users []GothUser `json:"users" gorm:"many2many:team_users"`
+	// Roles are the roles in the team.
+	Roles []GothRole `json:"roles" gorm:"foreignKey:TeamID;constraint:OnDelete:CASCADE"`
+	// CreatedAt is the creation time of the team.
+	CreatedAt time.Time `json:"created_at"`
+	// UpdatedAt is the update time of the team.
+	UpdatedAt time.Time `json:"updated_at"`
+	// DeletedAt is the deletion time of the team.
+	DeletedAt gorm.DeletedAt `json:"deleted_at"`
+}
+
+// GothRole is a role in the application.
+type GothRole struct {
+	// ID is the unique identifier of the role.
+	ID uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
+	// Name is the name of the role.
+	Name string `json:"name" validate:"required,min=3,max=255"`
+	// Description is the description of the role.
+	Description string `json:"description" validate:"max=255"`
+	// TeamID is the team ID of the role.
+	TeamID uuid.UUID `json:"team_id"`
+	// Team is the team of the role.
+	Team GothTeam `json:"team"`
+	// CreatedAt is the creation time of the role.
+	CreatedAt time.Time `json:"created_at"`
+	// UpdatedAt is the update time of the role.
+	UpdatedAt time.Time `json:"updated_at"`
+	// DeletedAt is the deletion time of the role.
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
