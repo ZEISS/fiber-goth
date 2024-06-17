@@ -99,7 +99,7 @@ type GothUser struct {
 }
 
 // TeamBySlug is returning the team with the given ID.
-func (u *GothUser) TeamBySlug(slug string) GothTeam {
+func (u GothUser) TeamBySlug(slug string) GothTeam {
 	for _, team := range *u.Teams {
 		if team.Slug == slug {
 			return team
