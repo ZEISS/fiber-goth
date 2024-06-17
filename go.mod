@@ -8,7 +8,7 @@ require (
 	github.com/golangci/golangci-lint v1.59.1
 	github.com/google/uuid v1.6.0
 	github.com/katallaxie/pkg v0.6.5
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/valyala/fasthttp v1.54.0
 	golang.org/x/oauth2 v0.21.0
 	gorm.io/driver/postgres v1.5.9
