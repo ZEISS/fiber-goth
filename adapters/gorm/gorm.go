@@ -60,7 +60,11 @@ func (a *gormAdapter) CreateUser(ctx context.Context, user adapters.GothUser) (a
 // GetSession is a helper function to retrieve a session by session token.
 func (a *gormAdapter) GetSession(ctx context.Context, sessionToken string) (adapters.GothSession, error) {
 	var session adapters.GothSession
-	err := a.db.WithContext(ctx).Preload(clause.Associations).Where("session_token = ?", sessionToken).First(&session).Error
+	err := a.db.WithContext(ctx).
+		Preload(clause.Associations).
+		Preload("User.Teams").
+		Preload("User.Teams.Roles").
+		Where("session_token = ?", sessionToken).First(&session).Error
 	if err != nil {
 		return adapters.GothSession{}, goth.ErrMissingSession
 	}
