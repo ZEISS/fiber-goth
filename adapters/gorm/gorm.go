@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // RunMigrations is a helper function to run the migrations for the database.
@@ -18,6 +19,8 @@ func RunMigrations(db *gorm.DB) error {
 		&adapters.GothUser{},
 		&adapters.GothSession{},
 		&adapters.GothVerificationToken{},
+		&adapters.GothTeam{},
+		&adapters.GothRole{},
 	)
 	if err != nil {
 		return err
@@ -57,7 +60,7 @@ func (a *gormAdapter) CreateUser(ctx context.Context, user adapters.GothUser) (a
 // GetSession is a helper function to retrieve a session by session token.
 func (a *gormAdapter) GetSession(ctx context.Context, sessionToken string) (adapters.GothSession, error) {
 	var session adapters.GothSession
-	err := a.db.WithContext(ctx).Preload("User").Where("session_token = ?", sessionToken).First(&session).Error
+	err := a.db.WithContext(ctx).Preload(clause.Associations).Where("session_token = ?", sessionToken).First(&session).Error
 	if err != nil {
 		return adapters.GothSession{}, goth.ErrMissingSession
 	}
