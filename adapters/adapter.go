@@ -89,7 +89,7 @@ type GothUser struct {
 	// Sessions are the sessions of the user.
 	Sessions []GothSession `json:"sessions" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	// Teams are the teams the user is a member of.
-	Teams *[]GothTeam `json:"teams" gorm:"many2many:team_users"`
+	Teams *[]GothTeam `json:"teams" gorm:"many2many:goth_team_users"`
 	// CreatedAt is the creation time of the user.
 	CreatedAt time.Time `json:"created_at"`
 	// UpdatedAt is the update time of the user.
@@ -150,7 +150,7 @@ type GothTeam struct {
 	// Description is the description of the team.
 	Description string `json:"description" validate:"max=255"`
 	// Users are the users in the team.
-	Users []GothUser `json:"users" gorm:"many2many:team_users"`
+	Users []GothUser `json:"users" gorm:"many2many:goth_team_users"`
 	// Roles are the roles in the team.
 	Roles []GothRole `json:"roles" gorm:"foreignKey:TeamID;constraint:OnDelete:CASCADE"`
 	// CreatedAt is the creation time of the team.
