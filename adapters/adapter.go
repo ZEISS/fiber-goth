@@ -98,6 +98,17 @@ type GothUser struct {
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
+// TeamBySlug is returning the team with the given ID.
+func (u *GothUser) TeamBySlug(slug string) *GothTeam {
+	for _, team := range *u.Teams {
+		if team.Slug == slug {
+			return &team
+		}
+	}
+
+	return nil
+}
+
 // GothSession is a session for a user.
 type GothSession struct {
 	// ID is the unique identifier of the session.
