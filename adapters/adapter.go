@@ -14,7 +14,21 @@ func init() {
 	gob.Register(&GothAccount{})
 	gob.Register(&GothUser{})
 	gob.Register(&GothSession{})
+	gob.Register(&GothTeam{})
 	gob.Register(&GothVerificationToken{})
+}
+
+// CsrfTokenGenerator is a function that generates a CSRF token.
+type CsrfTokenGenerator func() (string, error)
+
+// DefaultCsrfTokenGenerator generates a new CSRF token.
+func DefaultCsrfTokenGenerator() (string, error) {
+	token, err := uuid.NewV7()
+	if err != nil {
+		return "", err
+	}
+
+	return token.String(), nil
 }
 
 // AccountType represents the type of an account.
@@ -115,6 +129,10 @@ type GothSession struct {
 	ID uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
 	// SessionToken is the token of the session.
 	SessionToken string `json:"session_token"`
+	// CsrfToken is the CSRF token of the session.
+	CsrfToken GothCsrfToken `json:"csrf_token"`
+	// CsrfTokenID is the CSRF token ID of the session.
+	CsrfTokenID uuid.UUID `json:"csrf_token_id"`
 	// UserID is the user ID of the session.
 	UserID uuid.UUID `json:"user_id"`
 	// User is the user of the session.
@@ -129,9 +147,30 @@ type GothSession struct {
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
+// GothCsrfToken is a CSRF token for a user
+type GothCsrfToken struct {
+	// ID is the unique identifier of the CSRF token.
+	ID uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
+	// Token is the unique identifier of the token.
+	Token string `json:"token"`
+	// ExpiresAt is the expiry time of the token.
+	ExpiresAt time.Time `json:"expires_at"`
+	// CreatedAt is the creation time of the token.
+	CreatedAt time.Time `json:"created_at"`
+	// UpdatedAt is the update time of the token.
+	UpdatedAt time.Time `json:"updated_at"`
+	// DeletedAt is the deletion time of the token.
+	DeletedAt gorm.DeletedAt `json:"deleted_at"`
+}
+
 // IsValid returns true if the session is valid.
 func (s *GothSession) IsValid() bool {
 	return s.ExpiresAt.After(time.Now())
+}
+
+// GetCsrfToken returns the CSRF token.
+func (s *GothSession) GetCsrfToken() string {
+	return s.CsrfToken.Token
 }
 
 // GothVerificationToken is a verification token for a user
