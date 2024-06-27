@@ -93,7 +93,7 @@ type GothUser struct {
 	// Name is the name of the user.
 	Name string `json:"name" validate:"required,max=255"`
 	// Email is the email of the user.
-	Email string `json:"email" gorm:"uniqueIndex" validate:"required,email"`
+	Email string `json:"email" gorm:"unique" validate:"required,email"`
 	// EmailVerified is true if the email is verified.
 	EmailVerified *bool `json:"email_verified"`
 	// Image is the image URL of the user.
