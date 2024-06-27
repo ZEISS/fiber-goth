@@ -16,6 +16,7 @@ func init() {
 	gob.Register(&GothSession{})
 	gob.Register(&GothTeam{})
 	gob.Register(&GothVerificationToken{})
+	gob.Register(&GothCsrfToken{})
 }
 
 // CsrfTokenGenerator is a function that generates a CSRF token.
