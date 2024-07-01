@@ -14,7 +14,7 @@ import (
 
 // RunMigrations is a helper function to run the migrations for the database.
 func RunMigrations(db *gorm.DB) error {
-	err := db.AutoMigrate(
+	return db.AutoMigrate(
 		&adapters.GothAccount{},
 		&adapters.GothUser{},
 		&adapters.GothSession{},
@@ -22,11 +22,6 @@ func RunMigrations(db *gorm.DB) error {
 		&adapters.GothTeam{},
 		&adapters.GothRole{},
 	)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 var _ adapters.Adapter = (*gormAdapter)(nil)
@@ -38,13 +33,8 @@ type gormAdapter struct {
 }
 
 // New ...
-func New(db *gorm.DB) (*gormAdapter, error) {
-	err := RunMigrations(db)
-	if err != nil {
-		return nil, err
-	}
-
-	return &gormAdapter{db, adapters.UnimplementedAdapter{}}, nil
+func New(db *gorm.DB) *gormAdapter {
+	return &gormAdapter{db, adapters.UnimplementedAdapter{}}
 }
 
 // CreateUser is a helper function to create a new user.

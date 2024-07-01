@@ -71,7 +71,7 @@ func init() {
 	rootCmd.SilenceUsage = true
 }
 
-func run(ctx context.Context) error {
+func run(_ context.Context) error {
 	log.SetFlags(0)
 	log.SetOutput(os.Stderr)
 
@@ -83,10 +83,11 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	ga, err := gorm_adapter.New(conn)
-	if err != nil {
+	if err := gorm_adapter.RunMigrations(conn); err != nil {
 		return err
 	}
+
+	ga := gorm_adapter.New(conn)
 
 	providers.RegisterProvider(github.New(os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"), "http://localhost:3000/auth/github/callback"))
 
