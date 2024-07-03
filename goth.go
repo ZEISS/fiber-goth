@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/valyala/fasthttp"
 	"github.com/zeiss/fiber-goth/adapters"
@@ -223,24 +224,30 @@ func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 
 		provider, err := providers.GetProvider(p)
 		if err != nil {
-			return cfg.ErrorHandler(c, err)
+			return cfg.ErrorHandler(c, ErrMissingProviderName)
 		}
+
+		log.Infow("", "provider", provider.Name())
 
 		user, err := provider.CompleteAuth(c.Context(), cfg.Adapter, &Params{ctx: c})
 		if err != nil {
-			return cfg.ErrorHandler(c, err)
+			return cfg.ErrorHandler(c, ErrMissingUser)
 		}
+
+		log.Infow("", "user", user.Email)
 
 		duration, err := time.ParseDuration(cfg.Expiry)
 		if err != nil {
-			return cfg.ErrorHandler(c, err)
+			return cfg.ErrorHandler(c, ErrMissingSession)
 		}
 		expires := time.Now().Add(duration)
 
 		session, err := cfg.Adapter.CreateSession(c.Context(), user.ID, expires)
 		if err != nil {
-			return cfg.ErrorHandler(c, err)
+			return cfg.ErrorHandler(c, ErrMissingSession)
 		}
+
+		log.Infow("", "session", session.SessionToken)
 
 		cookieValue := fasthttp.Cookie{}
 		cookieValue.SetKeyBytes([]byte(cfg.CookieName))
@@ -543,8 +550,8 @@ var ConfigDefault = Config{
 }
 
 // default ErrorHandler that process return error from fiber.Handler
-func defaultErrorHandler(_ *fiber.Ctx, _ error) error {
-	return fiber.ErrBadRequest
+func defaultErrorHandler(_ *fiber.Ctx, err error) error {
+	return NewError(http.StatusBadRequest, err.Error())
 }
 
 // default filter for response that process default return.
