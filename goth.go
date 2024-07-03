@@ -231,6 +231,7 @@ func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 
 		user, err := provider.CompleteAuth(c.Context(), cfg.Adapter, &Params{ctx: c})
 		if err != nil {
+			log.Error(err)
 			return cfg.ErrorHandler(c, ErrMissingUser)
 		}
 
@@ -238,12 +239,14 @@ func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 
 		duration, err := time.ParseDuration(cfg.Expiry)
 		if err != nil {
+			log.Error(err)
 			return cfg.ErrorHandler(c, ErrMissingSession)
 		}
 		expires := time.Now().Add(duration)
 
 		session, err := cfg.Adapter.CreateSession(c.Context(), user.ID, expires)
 		if err != nil {
+			log.Error(err)
 			return cfg.ErrorHandler(c, ErrMissingSession)
 		}
 
