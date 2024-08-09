@@ -12,6 +12,7 @@ import (
 
 	"github.com/zeiss/fiber-goth/adapters"
 	"github.com/zeiss/fiber-goth/providers"
+	"github.com/zeiss/pkg/cast"
 	"github.com/zeiss/pkg/slices"
 	"github.com/zeiss/pkg/utilx"
 	"golang.org/x/oauth2"
@@ -151,28 +152,28 @@ func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adap
 	user := adapters.GothUser{
 		Name:  u.Name,
 		Email: u.Email,
-		Image: &u.Picture,
+		Image: cast.Ptr(u.Picture),
 		Accounts: []adapters.GothAccount{
 			{
 				Type:              adapters.AccountTypeOAuth2,
 				Provider:          g.ID(),
-				ProviderAccountID: adapters.StringPtr(strconv.Itoa(u.ID)),
-				AccessToken:       adapters.StringPtr(token.AccessToken),
-				RefreshToken:      adapters.StringPtr(token.RefreshToken),
-				ExpiresAt:         adapters.TimePtr(token.Expiry),
+				ProviderAccountID: cast.Ptr(strconv.Itoa(u.ID)),
+				AccessToken:       cast.Ptr(token.AccessToken),
+				RefreshToken:      cast.Ptr(token.RefreshToken),
+				ExpiresAt:         cast.Ptr(token.Expiry),
 				SessionState:      token.Extra("state").(string),
 			},
 		},
 	}
 
-	if utilx.Empty(u.Email) && slices.Any(checkScope, g.config.Scopes...) {
-		u.Email, err = getPrivateMail(ctx, g, token)
+	if utilx.Empty(user.Email) && slices.Any(checkScope, g.config.Scopes...) {
+		user.Email, err = getPrivateMail(ctx, g, token)
 		if err != nil {
 			return user, err
 		}
 	}
 
-	if utilx.Empty(u.Email) {
+	if utilx.Empty(user.Email) {
 		return user, ErrNoVerifiedPrimaryEmail
 	}
 

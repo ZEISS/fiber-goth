@@ -343,13 +343,3 @@ func (a *UnimplementedAdapter) CreateVerificationToken(_ context.Context, erfica
 func (a *UnimplementedAdapter) UseVerficationToken(_ context.Context, identifier string, token string) (GothVerificationToken, error) {
 	return GothVerificationToken{}, ErrUnimplemented
 }
-
-// StringPtr returns a pointer to the string value passed in.
-func StringPtr(s string) *string {
-	return &s
-}
-
-// TimePtr returns a pointer to the time value passed in.
-func TimePtr(t time.Time) *time.Time {
-	return &t
-}
