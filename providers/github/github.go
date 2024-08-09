@@ -3,15 +3,24 @@ package github
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/zeiss/fiber-goth/adapters"
 	"github.com/zeiss/fiber-goth/providers"
+	"github.com/zeiss/pkg/slices"
+	"github.com/zeiss/pkg/utilx"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/endpoints"
 )
+
+var ErrNoVerifiedPrimaryEmail = errors.New("goth: no verified primary email found")
+
+const NoopEmail = ""
 
 var _ providers.Provider = (*githubProvider)(nil)
 
@@ -155,6 +164,17 @@ func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adap
 		},
 	}
 
+	if utilx.Empty(u.Email) && slices.Any(checkScope, g.config.Scopes...) {
+		u.Email, err = getPrivateMail(ctx, g, token)
+		if err != nil {
+			return user, err
+		}
+	}
+
+	if utilx.Empty(u.Email) {
+		return user, ErrNoVerifiedPrimaryEmail
+	}
+
 	user, err = adapter.CreateUser(ctx, user)
 	if err != nil {
 		return adapters.GothUser{}, err
@@ -178,4 +198,45 @@ func newConfig(p *githubProvider, scopes ...string) *oauth2.Config {
 	}
 
 	return c
+}
+
+func getPrivateMail(ctx context.Context, p *githubProvider, token *oauth2.Token) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", p.emailURL, nil)
+	if err != nil {
+		return NoopEmail, err
+	}
+	req.Header.Add("Authorization", "Bearer "+token.AccessToken)
+
+	res, err := p.client.Do(req)
+	if err != nil {
+		return NoopEmail, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return NoopEmail, fmt.Errorf("goth: GitHub API responded with a %d trying to fetch user email", res.StatusCode)
+	}
+
+	var mailList []struct {
+		Email    string `json:"email"`
+		Primary  bool   `json:"primary"`
+		Verified bool   `json:"verified"`
+	}
+
+	err = json.NewDecoder(res.Body).Decode(&mailList)
+	if err != nil {
+		return NoopEmail, err
+	}
+
+	for _, v := range mailList {
+		if v.Primary && v.Verified {
+			return v.Email, nil
+		}
+	}
+
+	return NoopEmail, ErrNoVerifiedPrimaryEmail
+}
+
+func checkScope(scope string) bool {
+	return strings.TrimSpace(scope) == "user" || strings.TrimSpace(scope) == "user:email"
 }
