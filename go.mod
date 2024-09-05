@@ -12,7 +12,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/valyala/fasthttp v1.55.0
 	github.com/zeiss/pkg v0.1.7
-	golang.org/x/oauth2 v0.22.0
+	golang.org/x/oauth2 v0.23.0
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.11
 	mvdan.cc/gofumpt v0.7.0
