@@ -14,6 +14,11 @@ A [fiber](https://gofiber.io/) :rocket: middleware to integrate authentication t
 $ go get github.com/zeiss/fiber-goth
 ```
 
+## Providers
+
+* GitHub
+* Microsoft Entra ID
+
 ## Examples
 
 See [examples](https://github.com/zeiss/fiber-goth/tree/master/examples) to understand the provided interfaces
