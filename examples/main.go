@@ -11,6 +11,7 @@ import (
 	goth "github.com/zeiss/fiber-goth"
 	gorm_adapter "github.com/zeiss/fiber-goth/adapters/gorm"
 	"github.com/zeiss/fiber-goth/providers"
+	"github.com/zeiss/fiber-goth/providers/entraid"
 	"github.com/zeiss/fiber-goth/providers/github"
 
 	"github.com/gofiber/fiber/v2"
@@ -90,12 +91,13 @@ func run(_ context.Context) error {
 	ga := gorm_adapter.New(conn)
 
 	providers.RegisterProvider(github.New(os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"), "http://localhost:3000/auth/github/callback"))
+	providers.RegisterProvider(entraid.New(os.Getenv("ENTRAID_CLIENT_ID"), os.Getenv("ENTRAID_CLIENT_SECRET"), "http://localhost:3000/auth/entraid/callback", entraid.TenantType(os.Getenv("ENTRAID_TENANT_ID"))))
 
 	m := map[string]string{
 		"amazon":          "Amazon",
 		"apple":           "Apple",
 		"auth0":           "Auth0",
-		"azuread":         "Azure AD",
+		"entraid":         "EntraID",
 		"battlenet":       "Battle.net",
 		"bitbucket":       "Bitbucket",
 		"box":             "Box",
