@@ -12,7 +12,7 @@ require (
 	github.com/katallaxie/pkg v0.6.6
 	github.com/spf13/cobra v1.8.1
 	github.com/valyala/fasthttp v1.55.0
-	github.com/zeiss/pkg v0.1.8-0.20240906201119-75c76d920f4f
+	github.com/zeiss/pkg v0.1.8
 	golang.org/x/oauth2 v0.23.0
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.12
