@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 
 	goth "github.com/zeiss/fiber-goth"
 	gorm_adapter "github.com/zeiss/fiber-goth/adapters/gorm"
@@ -90,7 +91,7 @@ func run(_ context.Context) error {
 
 	ga := gorm_adapter.New(conn)
 
-	providers.RegisterProvider(github.New(os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"), "http://localhost:3000/auth/github/callback"))
+	providers.RegisterProvider(github.New(os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"), "http://localhost:3000/auth/github/callback", github.WithAllowedOrgs(strings.Split(os.Getenv("GITHUB_ALLOWED_ORGS"), ",")...)))
 	providers.RegisterProvider(entraid.New(os.Getenv("ENTRAID_CLIENT_ID"), os.Getenv("ENTRAID_CLIENT_SECRET"), "http://localhost:3000/auth/entraid/callback", entraid.TenantType(os.Getenv("ENTRAID_TENANT_ID"))))
 
 	m := map[string]string{

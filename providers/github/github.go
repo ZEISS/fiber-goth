@@ -2,16 +2,15 @@ package github
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/zeiss/fiber-goth/adapters"
 	"github.com/zeiss/fiber-goth/providers"
+
+	"github.com/google/go-github/v56/github"
 	"github.com/zeiss/pkg/cast"
 	"github.com/zeiss/pkg/slices"
 	"github.com/zeiss/pkg/utilx"
@@ -19,7 +18,12 @@ import (
 	"golang.org/x/oauth2/endpoints"
 )
 
-var ErrNoVerifiedPrimaryEmail = errors.New("goth: no verified primary email found")
+var (
+	ErrNoVerifiedPrimaryEmail = errors.New("goth: no verified primary email found")
+	ErrFailedFetchUser        = errors.New("goth: no failed to fetch user")
+	ErrNotAllowedOrg          = errors.New("goth: user not in allowed org")
+	ErrNoName                 = errors.New("goth: user has no display name set")
+)
 
 const NoopEmail = ""
 
@@ -36,36 +40,64 @@ var (
 var DefaultScopes = []string{"user:email", "read:user"}
 
 type githubProvider struct {
-	id           string
-	name         string
-	clientKey    string
-	secret       string
-	callbackURL  string
-	userURL      string
-	emailURL     string
-	authURL      string
-	providerType providers.ProviderType
-	client       *http.Client
-	config       *oauth2.Config
+	id            string
+	name          string
+	clientKey     string
+	secret        string
+	callbackURL   string
+	userURL       string
+	emailURL      string
+	authURL       string
+	enterpriseURL string
+	allowedOrgs   []string
+	providerType  providers.ProviderType
+	client        *http.Client
+	config        *oauth2.Config
+	scopes        []string
 
 	providers.UnimplementedProvider
 }
 
-// New creates a new GitHub provider.
-func New(clientKey, secret, callbackURL string, scopes ...string) *githubProvider {
-	p := &githubProvider{
-		id:           "github",
-		name:         "GitHub",
-		clientKey:    clientKey,
-		secret:       secret,
-		callbackURL:  callbackURL,
-		userURL:      UserURL,
-		emailURL:     EmailURL,
-		authURL:      AuthURL,
-		providerType: providers.ProviderTypeOAuth2,
-		client:       providers.DefaultClient,
+// Opt is a function that configures the GitHub provider.
+type Opt func(*githubProvider)
+
+// WithScopes sets the scopes for the GitHub provider.
+func WithScopes(scopes ...string) Opt {
+	return func(p *githubProvider) {
+		p.config.Scopes = scopes
 	}
-	p.config = newConfig(p, scopes...)
+}
+
+// WithAllowedOrgs sets the allowed organizations for the GitHub provider.
+func WithAllowedOrgs(orgs ...string) Opt {
+	return func(p *githubProvider) {
+		p.allowedOrgs = orgs
+	}
+}
+
+// New creates a new GitHub provider.
+func New(clientKey, secret, callbackURL string, opts ...Opt) *githubProvider {
+	p := &githubProvider{
+		id:            "github",
+		name:          "GitHub",
+		clientKey:     clientKey,
+		secret:        secret,
+		callbackURL:   callbackURL,
+		userURL:       UserURL,
+		emailURL:      EmailURL,
+		authURL:       AuthURL,
+		enterpriseURL: "",
+		providerType:  providers.ProviderTypeOAuth2,
+		client:        providers.DefaultClient,
+		allowedOrgs:   []string{},
+		scopes:        DefaultScopes,
+	}
+
+	for _, opt := range opts {
+		opt(p)
+	}
+
+	p.config = newConfig(p, p.scopes...)
 
 	return p
 }
@@ -131,28 +163,17 @@ func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adap
 		return adapters.GothUser{}, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", g.userURL, nil)
-	if err != nil {
-		return adapters.GothUser{}, err
-	}
-	req.Header.Add("Authorization", "Bearer "+token.AccessToken)
+	gc := github.NewClient(g.config.Client(ctx, token))
 
-	resp, err := g.client.Do(req)
-	if err != nil {
-		return adapters.GothUser{}, err
-	}
-	defer io.Copy(io.Discard, resp.Body) // equivalent to `cp body /dev/null`
-	defer resp.Body.Close()
-
-	err = json.NewDecoder(resp.Body).Decode(&u)
+	gu, _, err := gc.Users.Get(ctx, "")
 	if err != nil {
 		return adapters.GothUser{}, err
 	}
 
 	user := adapters.GothUser{
-		Name:  u.Name,
-		Email: u.Email,
-		Image: cast.Ptr(u.Picture),
+		Name:  gu.GetName(),
+		Email: gu.GetEmail(),
+		Image: cast.Ptr(gu.GetAvatarURL()),
 		Accounts: []adapters.GothAccount{
 			{
 				Type:              adapters.AccountTypeOAuth2,
@@ -167,14 +188,33 @@ func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adap
 	}
 
 	if utilx.Empty(user.Email) && slices.Any(checkScope, g.config.Scopes...) {
-		user.Email, err = getPrivateMail(ctx, g, token)
-		if err != nil {
-			return user, err
+		opt := &github.ListOptions{}
+
+		for {
+			emails, resp, err := gc.Users.ListEmails(ctx, opt)
+			if err != nil {
+				return adapters.GothUser{}, err
+			}
+
+			user.Email, err = checkEmail(emails...)
+			if err != nil {
+				return adapters.GothUser{}, err
+			}
+
+			if resp.NextPage == 0 {
+				break
+			}
+
+			opt.Page = resp.NextPage
 		}
 	}
 
 	if utilx.Empty(user.Email) {
 		return user, ErrNoVerifiedPrimaryEmail
+	}
+
+	if len(g.allowedOrgs) > 0 && !slices.Any(checkOrg(ctx, gc, gu.GetLogin()), g.allowedOrgs...) {
+		return adapters.GothUser{}, ErrNotAllowedOrg
 	}
 
 	user, err = adapter.CreateUser(ctx, user)
@@ -202,43 +242,27 @@ func newConfig(p *githubProvider, scopes ...string) *oauth2.Config {
 	return c
 }
 
-func getPrivateMail(ctx context.Context, p *githubProvider, token *oauth2.Token) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", p.emailURL, nil)
-	if err != nil {
-		return NoopEmail, err
-	}
-	req.Header.Add("Authorization", "Bearer "+token.AccessToken)
+func checkScope(scope string) bool {
+	return strings.TrimSpace(scope) == "user" || strings.TrimSpace(scope) == "user:email"
+}
 
-	res, err := p.client.Do(req)
-	if err != nil {
-		return NoopEmail, err
-	}
-	defer res.Body.Close()
+func checkOrg(ctx context.Context, c *github.Client, user string) func(string) bool {
+	return func(org string) bool {
+		m, _, err := c.Organizations.IsMember(ctx, org, user)
+		if err != nil {
+			return false
+		}
 
-	if res.StatusCode != http.StatusOK {
-		return NoopEmail, fmt.Errorf("goth: GitHub API responded with a %d trying to fetch user email", res.StatusCode)
+		return m
 	}
+}
 
-	var mailList []struct {
-		Email    string `json:"email"`
-		Primary  bool   `json:"primary"`
-		Verified bool   `json:"verified"`
-	}
-
-	err = json.NewDecoder(res.Body).Decode(&mailList)
-	if err != nil {
-		return NoopEmail, err
-	}
-
-	for _, v := range mailList {
-		if v.Primary && v.Verified {
-			return v.Email, nil
+func checkEmail(emails ...*github.UserEmail) (string, error) {
+	for _, e := range emails {
+		if e.GetPrimary() && e.GetVerified() {
+			return cast.Value(e.Email), nil
 		}
 	}
 
 	return NoopEmail, ErrNoVerifiedPrimaryEmail
-}
-
-func checkScope(scope string) bool {
-	return strings.TrimSpace(scope) == "user" || strings.TrimSpace(scope) == "user:email"
 }
