@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -29,13 +30,6 @@ const NoopEmail = ""
 
 var _ providers.Provider = (*githubProvider)(nil)
 
-var (
-	AuthURL  = "https://github.com/login/oauth/authorize"
-	TokenURL = "https://github.com/login/oauth/access_token"
-	UserURL  = "https://api.github.com/user"
-	EmailURL = "https://api.github.com/user/emails"
-)
-
 // DefaultScopes holds the default scopes used for GitHub.
 var DefaultScopes = []string{"user:email", "read:user"}
 
@@ -45,9 +39,6 @@ type githubProvider struct {
 	clientKey     string
 	secret        string
 	callbackURL   string
-	userURL       string
-	emailURL      string
-	authURL       string
 	enterpriseURL string
 	allowedOrgs   []string
 	providerType  providers.ProviderType
@@ -75,6 +66,13 @@ func WithAllowedOrgs(orgs ...string) Opt {
 	}
 }
 
+// WithEnterpriseURL sets the enterprise URL for the GitHub provider.
+func WithEnterpriseURL(url string) Opt {
+	return func(p *githubProvider) {
+		p.enterpriseURL = url
+	}
+}
+
 // New creates a new GitHub provider.
 func New(clientKey, secret, callbackURL string, opts ...Opt) *githubProvider {
 	p := &githubProvider{
@@ -83,9 +81,6 @@ func New(clientKey, secret, callbackURL string, opts ...Opt) *githubProvider {
 		clientKey:     clientKey,
 		secret:        secret,
 		callbackURL:   callbackURL,
-		userURL:       UserURL,
-		emailURL:      EmailURL,
-		authURL:       AuthURL,
 		enterpriseURL: "",
 		providerType:  providers.ProviderTypeOAuth2,
 		client:        providers.DefaultClient,
@@ -165,6 +160,13 @@ func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adap
 
 	gc := github.NewClient(g.config.Client(ctx, token))
 
+	if utilx.NotEmpty(g.enterpriseURL) {
+		gc, err = gc.WithEnterpriseURLs(g.enterpriseURL, g.enterpriseURL)
+		if err != nil {
+			return adapters.GothUser{}, err
+		}
+	}
+
 	gu, _, err := gc.Users.Get(ctx, "")
 	if err != nil {
 		return adapters.GothUser{}, err
@@ -239,6 +241,10 @@ func newConfig(p *githubProvider, scopes ...string) *oauth2.Config {
 		Scopes:       append(DefaultScopes, scopes...),
 	}
 
+	if utilx.NotEmpty(p.enterpriseURL) {
+		c.Endpoint = githubEnterpriseConfig(p.enterpriseURL)
+	}
+
 	return c
 }
 
@@ -265,4 +271,12 @@ func checkEmail(emails ...*github.UserEmail) (string, error) {
 	}
 
 	return NoopEmail, ErrNoVerifiedPrimaryEmail
+}
+
+func githubEnterpriseConfig(url string) oauth2.Endpoint {
+	return oauth2.Endpoint{
+		AuthURL:       fmt.Sprintf("%s/login/oauth/authorize", strings.TrimSuffix(url, "/")),
+		TokenURL:      fmt.Sprintf("%s/login/oauth/access_token", strings.TrimSuffix(url, "/")),
+		DeviceAuthURL: fmt.Sprintf("%s/login/device/code", strings.TrimSuffix(url, "/")),
+	}
 }

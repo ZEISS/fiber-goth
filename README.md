@@ -16,7 +16,7 @@ $ go get github.com/zeiss/fiber-goth
 
 ## Providers
 
-* GitHub
+* GitHub (github.com, Enterprise, and Enterprise Cloud)
 * Microsoft Entra ID
 
 ## Examples
