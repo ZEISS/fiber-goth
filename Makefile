@@ -1,10 +1,10 @@
 .DEFAULT_GOAL := release
 
-GO 				?= go
+GO 						?= go
 GO_RUN_TOOLS 	?= $(GO) run -modfile ./tools/go.mod
-GO_TEST			?= $(GO_RUN_TOOLS) gotest.tools/gotestsum --format pkgname
+GO_TEST				?= $(GO_RUN_TOOLS) gotest.tools/gotestsum --format pkgname
 GO_RELEASER 	?= $(GO_RUN_TOOLS) github.com/goreleaser/goreleaser
-GO_MOD 			?= $(shell ${GO} list -m)
+GO_MOD 				?= $(shell ${GO} list -m)
 
 .PHONY: release
 release: ## Release the project.
@@ -21,6 +21,10 @@ fmt: ## Run go fmt against code.
 .PHONY: vet
 vet: ## Run go vet against code.
 	$(GO) vet ./...
+
+.PHONY: start
+start: ## Run air live reload.
+	$(GO_RUN_TOOLS) github.com/air-verse/air
 
 .PHONY: test
 test: fmt vet ## Run tests.
