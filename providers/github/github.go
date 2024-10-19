@@ -126,7 +126,7 @@ func (a *authIntent) GetAuthURL() (string, error) {
 }
 
 // BeginAuth starts the authentication process.
-func (g *githubProvider) BeginAuth(ctx context.Context, adapter adapters.Adapter, state string) (providers.AuthIntent, error) {
+func (g *githubProvider) BeginAuth(ctx context.Context, adapter adapters.Adapter, state string, _ providers.AuthParams) (providers.AuthIntent, error) {
 	verifier := oauth2.GenerateVerifier()
 	url := g.config.AuthCodeURL(state, oauth2.S256ChallengeOption(verifier))
 

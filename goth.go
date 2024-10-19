@@ -179,7 +179,7 @@ func (BeginAuthHandler) New(cfg Config) fiber.Handler {
 			return err
 		}
 
-		intent, err := provider.BeginAuth(c.Context(), cfg.Adapter, state)
+		intent, err := provider.BeginAuth(c.Context(), cfg.Adapter, state, &Params{ctx: c})
 		if err != nil {
 			return err
 		}
@@ -266,7 +266,7 @@ func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 	}
 }
 
-// NewBeginCompleteAuthHandler creates a new middleware handler to complete authentication.
+// NewCompleteAuthHandler creates a new middleware handler to complete authentication.
 func NewCompleteAuthHandler(config ...Config) fiber.Handler {
 	cfg := configDefault(config...)
 

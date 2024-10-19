@@ -117,7 +117,7 @@ const (
 )
 
 // BeginAuth starts the authentication process.
-func (e *entraIdProvider) BeginAuth(ctx context.Context, adapter adapters.Adapter, state string) (providers.AuthIntent, error) {
+func (e *entraIdProvider) BeginAuth(ctx context.Context, adapter adapters.Adapter, state string, _ providers.AuthParams) (providers.AuthIntent, error) {
 	url := e.config.AuthCodeURL(state)
 
 	return &authIntent{

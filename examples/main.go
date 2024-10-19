@@ -137,7 +137,7 @@ func run(_ context.Context) error {
 		return t.Execute(c.Response().BodyWriter(), providerIndex)
 	})
 	app.Get("/session", goth.NewSessionHandler(gothConfig))
-	app.Get("/login/:provider", goth.NewBeginAuthHandler(gothConfig))
+	app.Use("/login/:provider", goth.NewBeginAuthHandler(gothConfig))
 	app.Get("/auth/:provider/callback", goth.NewCompleteAuthHandler(gothConfig))
 	app.Get("/logout", goth.NewLogoutHandler(gothConfig))
 
