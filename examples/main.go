@@ -163,7 +163,19 @@ var helloTemplate = `<div>Hello World</div>`
 
 var indexTemplate = `{{range $key,$value:=.Providers}}
     <p><a href="/login/{{$value}}">Log in with {{index $.ProvidersMap $value}}</a></p>
-{{end}}`
+{{end}}
+<div class="container">
+  <form action="/login/credentials">
+    <label for="usrname">Username</label>
+    <input type="text" id="usrname" name="usrname" required>
+
+    <label for="psw">Password</label>
+    <input type="password" id="psw" name="psw" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" title="Must contain at least one number and one uppercase and lowercase letter, and at least 8 or more characters" required>
+
+    <input type="submit" value="Submit">
+  </form>
+</div>
+`
 
 var userTemplate = `
 <p><a href="/logout/{{.Provider}}">logout</a></p>

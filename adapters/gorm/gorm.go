@@ -19,8 +19,6 @@ func RunMigrations(db *gorm.DB) error {
 		&adapters.GothUser{},
 		&adapters.GothSession{},
 		&adapters.GothVerificationToken{},
-		&adapters.GothTeam{},
-		&adapters.GothRole{},
 	)
 }
 
@@ -28,13 +26,12 @@ var _ adapters.Adapter = (*gormAdapter)(nil)
 
 type gormAdapter struct {
 	db *gorm.DB
-
 	adapters.UnimplementedAdapter
 }
 
-// New ...
+// New is a helper function to create a new adapter.
 func New(db *gorm.DB) *gormAdapter {
-	return &gormAdapter{db, adapters.UnimplementedAdapter{}}
+	return &gormAdapter{db: db}
 }
 
 // CreateUser is a helper function to create a new user.
@@ -50,11 +47,7 @@ func (a *gormAdapter) CreateUser(ctx context.Context, user adapters.GothUser) (a
 // GetSession is a helper function to retrieve a session by session token.
 func (a *gormAdapter) GetSession(ctx context.Context, sessionToken string) (adapters.GothSession, error) {
 	var session adapters.GothSession
-	err := a.db.WithContext(ctx).
-		Preload(clause.Associations).
-		Preload("User.Teams").
-		Preload("User.Teams.Roles").
-		Where("session_token = ?", sessionToken).First(&session).Error
+	err := a.db.WithContext(ctx).Preload(clause.Associations).Where("session_token = ?", sessionToken).First(&session).Error
 	if err != nil {
 		return adapters.GothSession{}, goth.ErrMissingSession
 	}
@@ -65,7 +58,7 @@ func (a *gormAdapter) GetSession(ctx context.Context, sessionToken string) (adap
 // GetUser is a helper function to retrieve a user by ID.
 func (a *gormAdapter) GetUser(ctx context.Context, id uuid.UUID) (adapters.GothUser, error) {
 	var user adapters.GothUser
-	err := a.db.WithContext(ctx).Preload("Accounts").Where("id = ?", id).First(&user).Error
+	err := a.db.WithContext(ctx).Preload(clause.Associations).Where("id = ?", id).First(&user).Error
 	if err != nil {
 		return adapters.GothUser{}, goth.ErrMissingUser
 	}
@@ -80,10 +73,11 @@ func (a *gormAdapter) CreateSession(ctx context.Context, userID uuid.UUID, expir
 		SessionToken: uuid.NewString(),
 		ExpiresAt:    expires,
 		CsrfToken: adapters.GothCsrfToken{
-			Token:     uuid.NewString(), // creates a token that is used to prevent CSRF attacks
-			ExpiresAt: time.Now().Add(24 * time.Hour),
+			Token:     uuid.NewString(),               // creates a token that is used to prevent CSRF attacks
+			ExpiresAt: time.Now().Add(24 * time.Hour), // expires in 24 hours
 		},
 	}
+
 	err := a.db.Session(&gorm.Session{FullSaveAssociations: true}).WithContext(ctx).Create(&session).Error
 	if err != nil {
 		return adapters.GothSession{}, goth.ErrBadSession

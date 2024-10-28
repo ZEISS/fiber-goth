@@ -14,7 +14,6 @@ func init() {
 	gob.Register(&GothAccount{})
 	gob.Register(&GothUser{})
 	gob.Register(&GothSession{})
-	gob.Register(&GothTeam{})
 	gob.Register(&GothVerificationToken{})
 	gob.Register(&GothCsrfToken{})
 }
@@ -103,25 +102,12 @@ type GothUser struct {
 	Accounts []GothAccount `json:"accounts" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	// Sessions are the sessions of the user.
 	Sessions []GothSession `json:"sessions" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	// Teams are the teams the user is a member of.
-	Teams *[]GothTeam `json:"teams" gorm:"many2many:goth_team_users"`
 	// CreatedAt is the creation time of the user.
 	CreatedAt time.Time `json:"created_at"`
 	// UpdatedAt is the update time of the user.
 	UpdatedAt time.Time `json:"updated_at"`
 	// DeletedAt is the deletion time of the user.
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
-}
-
-// TeamBySlug is returning the team with the given ID.
-func (u GothUser) TeamBySlug(slug string) GothTeam {
-	for _, team := range *u.Teams {
-		if team.Slug == slug {
-			return team
-		}
-	}
-
-	return GothTeam{}
 }
 
 // GothSession is a session for a user.
@@ -190,48 +176,6 @@ type GothVerificationToken struct {
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
-// GothTeam is a team in the application.
-type GothTeam struct {
-	// ID is the unique identifier of the team.
-	ID uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
-	// Name is the name of the team.
-	Name string `json:"name" validate:"required,max=255"`
-	// Slug is the slug of the team.
-	Slug string `json:"slug" validate:"required,min=3,max=255"`
-	// Description is the description of the team.
-	Description string `json:"description" validate:"max=255"`
-	// Users are the users in the team.
-	Users []GothUser `json:"users" gorm:"many2many:goth_team_users"`
-	// Roles are the roles in the team.
-	Roles []GothRole `json:"roles" gorm:"foreignKey:TeamID;constraint:OnDelete:CASCADE"`
-	// CreatedAt is the creation time of the team.
-	CreatedAt time.Time `json:"created_at"`
-	// UpdatedAt is the update time of the team.
-	UpdatedAt time.Time `json:"updated_at"`
-	// DeletedAt is the deletion time of the team.
-	DeletedAt gorm.DeletedAt `json:"deleted_at"`
-}
-
-// GothRole is a role in the application.
-type GothRole struct {
-	// ID is the unique identifier of the role.
-	ID uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
-	// Name is the name of the role.
-	Name string `json:"name" validate:"required,min=3,max=255"`
-	// Description is the description of the role.
-	Description string `json:"description" validate:"max=255"`
-	// TeamID is the team ID of the role.
-	TeamID uuid.UUID `json:"team_id"`
-	// Team is the team of the role.
-	Team GothTeam `json:"team"`
-	// CreatedAt is the creation time of the role.
-	CreatedAt time.Time `json:"created_at"`
-	// UpdatedAt is the update time of the role.
-	UpdatedAt time.Time `json:"updated_at"`
-	// DeletedAt is the deletion time of the role.
-	DeletedAt gorm.DeletedAt `json:"deleted_at"`
-}
-
 // Adapter is an interface that defines the methods for interacting with the underlying data storage.
 type Adapter interface {
 	// CreateUser creates a new user.
@@ -262,6 +206,12 @@ type Adapter interface {
 	CreateVerificationToken(ctx context.Context, verficationToken GothVerificationToken) (GothVerificationToken, error)
 	// UseVerficationToken uses a verification token.
 	UseVerficationToken(ctx context.Context, identifier string, token string) (GothVerificationToken, error)
+	// CreateCsrfToken creates a new CSRF token.
+	CreateCsrfToken(ctx context.Context, csrfToken GothCsrfToken) (GothCsrfToken, error)
+	// GetCsrfToken retrieves a CSRF token by token.
+	GetCsrfToken(ctx context.Context, token string) (GothCsrfToken, error)
+	// DeleteCsrfToken deletes a CSRF token by token.
+	DeleteCsrfToken(ctx context.Context, token string) error
 }
 
 var _ Adapter = (*UnimplementedAdapter)(nil)
@@ -342,4 +292,19 @@ func (a *UnimplementedAdapter) CreateVerificationToken(_ context.Context, erfica
 // UseVerficationToken uses a verification token.
 func (a *UnimplementedAdapter) UseVerficationToken(_ context.Context, identifier string, token string) (GothVerificationToken, error) {
 	return GothVerificationToken{}, ErrUnimplemented
+}
+
+// CreateCsrfToken creates a new CSRF token.
+func (a *UnimplementedAdapter) CreateCsrfToken(_ context.Context, csrfToken GothCsrfToken) (GothCsrfToken, error) {
+	return GothCsrfToken{}, ErrUnimplemented
+}
+
+// GetCsrfToken retrieves a CSRF token by token.
+func (a *UnimplementedAdapter) GetCsrfToken(_ context.Context, token string) (GothCsrfToken, error) {
+	return GothCsrfToken{}, ErrUnimplemented
+}
+
+// DeleteCsrfToken deletes a CSRF token by token.
+func (a *UnimplementedAdapter) DeleteCsrfToken(_ context.Context, token string) error {
+	return ErrUnimplemented
 }

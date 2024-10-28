@@ -91,7 +91,7 @@ func HashPassword(password string) (string, error) {
 }
 
 // BeginAuth starts the authentication process.
-func (e *credentialsProvider) BeginAuth(ctx context.Context, adapter adapters.Adapter, state string, _ providers.AuthParams) (providers.AuthIntent, error) {
+func (e *credentialsProvider) BeginAuth(ctx context.Context, adapter adapters.Adapter, state string, params providers.AuthParams) (providers.AuthIntent, error) {
 	return &authIntent{
 		authURL: "",
 	}, nil
