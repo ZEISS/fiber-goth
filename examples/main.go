@@ -10,6 +10,7 @@ import (
 
 	goth "github.com/zeiss/fiber-goth"
 	gorm_adapter "github.com/zeiss/fiber-goth/adapters/gorm"
+	"github.com/zeiss/fiber-goth/csrf"
 	"github.com/zeiss/fiber-goth/providers"
 	"github.com/zeiss/fiber-goth/providers/entraid"
 	"github.com/zeiss/fiber-goth/providers/github"
@@ -130,6 +131,15 @@ func run(_ context.Context) error {
 		}
 
 		return c.JSON(session)
+	})
+
+	app.Get("/protected", func(c *fiber.Ctx) error {
+		t, err := csrf.CsrfTokenFromContext(c)
+		if err != nil {
+			return err
+		}
+
+		return c.SendString(t)
 	})
 
 	app.Get("/login", func(c *fiber.Ctx) error {

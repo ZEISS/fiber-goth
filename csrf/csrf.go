@@ -5,7 +5,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/valyala/fasthttp"
+	goth "github.com/zeiss/fiber-goth"
 	"github.com/zeiss/fiber-goth/adapters"
+	"github.com/zeiss/pkg/slices"
 	"github.com/zeiss/pkg/utilx"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,6 +18,10 @@ var (
 	ErrMissingHeader = fiber.NewError(fiber.StatusForbidden, "missing csrf token in header")
 	// ErrTokenNotFound is returned when the token is not found in the session.
 	ErrTokenNotFound = fiber.NewError(fiber.StatusForbidden, "csrf token not found in session")
+	// ErrMissingSession is returned when the session is missing from the context.
+	ErrMissingSession = fiber.NewError(fiber.StatusForbidden, "missing session in context")
+	// ErrGenerateToken is returned when the token generator returns an error.
+	ErrGenerateToken = fiber.NewError(fiber.StatusForbidden, "failed to generate csrf token")
 )
 
 // HeaderName is the default header name used to extract the token.
@@ -37,6 +43,10 @@ type Config struct {
 	// Adapter is the adapter used to store the session.
 	// Adapter adapters.Adapter
 	Adapter adapters.Adapter
+
+	// IgnoredMethods is a list of methods to ignore from CSRF protection.
+	// Optional. Default: []string{fiber.MethodGet, fiber.MethodHead, fiber.MethodOptions, fiber.MethodTrace}
+	IgnoredMethods []string
 
 	// ErrorHandler is executed when an error is returned from fiber.Handler.
 	//
@@ -93,6 +103,7 @@ var ConfigDefault = Config{
 	ErrorHandler:   defaultErrorHandler,
 	Extractor:      FromHeader(HeaderName),
 	TokenGenerator: DefaultCsrfTokenGenerator,
+	IgnoredMethods: []string{fiber.MethodGet, fiber.MethodHead, fiber.MethodOptions, fiber.MethodTrace},
 }
 
 // CsrfTokenGenerator is a function that generates a CSRF token.
@@ -147,24 +158,18 @@ func configDefault(config ...Config) Config {
 		cfg.TokenGenerator = ConfigDefault.TokenGenerator
 	}
 
+	if cfg.IgnoredMethods == nil {
+		cfg.IgnoredMethods = ConfigDefault.IgnoredMethods
+	}
+
 	return cfg
 }
 
-// Handler ...
-type Handler struct {
-	config Config
-}
-
 // New creates a new csrf middleware.
+// nolint:gocyclo
 func New(config ...Config) fiber.Handler {
 	// Set default config
 	cfg := configDefault(config...)
-
-	// handler := &Handler{
-	// 	config: cfg,
-	// }
-
-	var token string
 
 	// Return new handler
 	return func(c *fiber.Ctx) error {
@@ -173,81 +178,67 @@ func New(config ...Config) fiber.Handler {
 			return c.Next()
 		}
 
-		switch c.Method() {
-		case fiber.MethodGet, fiber.MethodHead, fiber.MethodOptions, fiber.MethodTrace:
-			// cookieToken := c.Cookies(cfg.CookieName)
-		default:
-			extractedToken, err := cfg.Extractor(c)
-			if err != nil {
-				return cfg.ErrorHandler(c, err)
-			}
-
-			if utilx.Empty(extractedToken) {
-				return cfg.ErrorHandler(c, ErrTokenNotFound)
-			}
-
-			raw := ""
-
-			if utilx.Empty(raw) {
-				// expire the token
-				cookieValue := fasthttp.Cookie{}
-				cookieValue.SetKey(cfg.CookieName)
-				cookieValue.SetValueBytes([]byte(""))
-				cookieValue.SetHTTPOnly(cfg.CookieHTTPOnly)
-				cookieValue.SetSameSite(cfg.CookieSameSite)
-				cookieValue.SetExpire(time.Now().Add(-time.Hour))
-				cookieValue.SetPath(cfg.CookiePath)
-				cookieValue.SetDomain(cfg.CookieDomain)
-				cookieValue.SetSecure(cfg.CookieSecure)
-
-				// Set the cookie
-				c.Response().Header.SetCookie(&cookieValue)
-
-				return cfg.ErrorHandler(c, ErrTokenNotFound)
-			}
+		// extract the session
+		session, err := goth.SessionFromContext(c)
+		if err != nil {
+			return cfg.ErrorHandler(c, ErrMissingSession)
 		}
 
-		// Generate a new token
+		// Skip middleware if the method is ignored
+		if slices.Any(func(method string) bool { return method == c.Method() }, cfg.IgnoredMethods...) {
+			return c.Next()
+		}
+
+		// extract the token
+		token, err := cfg.Extractor(c)
+		if err != nil {
+			return cfg.ErrorHandler(c, ErrTokenNotFound)
+		}
+
+		// if the token is empty, abort
 		if utilx.Empty(token) {
-			// csrfToken, err := cfg.TokenGenerator()
-			// if err != nil {
-			// 	return cfg.ErrorHandler(c, err)
-			// }
+			return cfg.ErrorHandler(c, ErrTokenNotFound)
 		}
 
-		// Create the cookie
-		cookieValue := fasthttp.Cookie{}
-		cookieValue.SetKey(cfg.CookieName)
-		cookieValue.SetValueBytes([]byte(token))
-		cookieValue.SetHTTPOnly(cfg.CookieHTTPOnly)
-		cookieValue.SetSameSite(cfg.CookieSameSite)
-		cookieValue.SetExpire(time.Now().Add(cfg.IdleTimeout))
-		cookieValue.SetPath(cfg.CookiePath)
-		cookieValue.SetDomain(cfg.CookieDomain)
-		cookieValue.SetSecure(cfg.CookieSecure)
+		if session.GetCsrfToken().HasExpired() {
+			return cfg.ErrorHandler(c, ErrTokenNotFound)
+		}
 
-		// Set the cookie
-		c.Response().Header.SetCookie(&cookieValue)
+		if !session.GetCsrfToken().IsValid(token) {
+			return cfg.ErrorHandler(c, ErrTokenNotFound)
+		}
 
-		// Add the token to the context
-		c.Vary(fiber.HeaderCookie)
+		t, err := cfg.TokenGenerator()
+		if err != nil {
+			return cfg.ErrorHandler(c, ErrGenerateToken)
+		}
 
-		// Add the token to the context
-		c.Locals(csrfTokenKey, token)
+		session.CsrfToken = adapters.GothCsrfToken{
+			Token:     t,
+			ExpiresAt: time.Now().Add(cfg.IdleTimeout),
+		}
 
-		// Continue stack
+		session, err = cfg.Adapter.UpdateSession(c.Context(), session)
+		if err != nil {
+			return cfg.ErrorHandler(c, err)
+		}
+
+		// Set the session in the context
+		c.Locals(csrfTokenKey, session.CsrfToken)
+
+		// continue stack
 		return c.Next()
 	}
 }
 
-// CsrfTokenFromContext returns the csrf token from the context.
-func CsrfTokenFromContext(c *fiber.Ctx) string {
-	token, ok := c.Locals(csrfTokenKey).(string)
+// CsrfTokenFromContext returns the CSRF token from the context.
+func CsrfTokenFromContext(c *fiber.Ctx) (string, error) {
+	token, ok := c.Locals(csrfTokenKey).(adapters.GothCsrfToken)
 	if !ok {
-		return ""
+		return "", ErrTokenNotFound
 	}
 
-	return token
+	return token.Token, nil
 }
 
 // FromHeader returns a function that extracts token from the request header.

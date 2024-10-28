@@ -260,6 +260,8 @@ func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 		cookieValue.SetExpire(expires)
 		cookieValue.SetPath("/")
 
+		c.Vary(fiber.HeaderCookie)
+
 		c.Response().Header.SetCookie(&cookieValue)
 
 		return cfg.CompletionFilter(c)

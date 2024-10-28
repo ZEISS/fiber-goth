@@ -18,19 +18,6 @@ func init() {
 	gob.Register(&GothCsrfToken{})
 }
 
-// CsrfTokenGenerator is a function that generates a CSRF token.
-type CsrfTokenGenerator func() (string, error)
-
-// DefaultCsrfTokenGenerator generates a new CSRF token.
-func DefaultCsrfTokenGenerator() (string, error) {
-	token, err := uuid.NewV7()
-	if err != nil {
-		return "", err
-	}
-
-	return token.String(), nil
-}
-
 // AccountType represents the type of an account.
 type AccountType string
 
@@ -156,8 +143,18 @@ func (s *GothSession) IsValid() bool {
 }
 
 // GetCsrfToken returns the CSRF token.
-func (s *GothSession) GetCsrfToken() string {
-	return s.CsrfToken.Token
+func (s *GothSession) GetCsrfToken() GothCsrfToken {
+	return s.CsrfToken
+}
+
+// HasExpired returns true if the session has expired.
+func (c GothCsrfToken) HasExpired() bool {
+	return c.ExpiresAt.Before(time.Now())
+}
+
+// IsValid returns true if the token is valid.
+func (c GothCsrfToken) IsValid(token string) bool {
+	return c.Token == token
 }
 
 // GothVerificationToken is a verification token for a user
@@ -206,12 +203,6 @@ type Adapter interface {
 	CreateVerificationToken(ctx context.Context, verficationToken GothVerificationToken) (GothVerificationToken, error)
 	// UseVerficationToken uses a verification token.
 	UseVerficationToken(ctx context.Context, identifier string, token string) (GothVerificationToken, error)
-	// CreateCsrfToken creates a new CSRF token.
-	CreateCsrfToken(ctx context.Context, csrfToken GothCsrfToken) (GothCsrfToken, error)
-	// GetCsrfToken retrieves a CSRF token by token.
-	GetCsrfToken(ctx context.Context, token string) (GothCsrfToken, error)
-	// DeleteCsrfToken deletes a CSRF token by token.
-	DeleteCsrfToken(ctx context.Context, token string) error
 }
 
 var _ Adapter = (*UnimplementedAdapter)(nil)
@@ -292,19 +283,4 @@ func (a *UnimplementedAdapter) CreateVerificationToken(_ context.Context, erfica
 // UseVerficationToken uses a verification token.
 func (a *UnimplementedAdapter) UseVerficationToken(_ context.Context, identifier string, token string) (GothVerificationToken, error) {
 	return GothVerificationToken{}, ErrUnimplemented
-}
-
-// CreateCsrfToken creates a new CSRF token.
-func (a *UnimplementedAdapter) CreateCsrfToken(_ context.Context, csrfToken GothCsrfToken) (GothCsrfToken, error) {
-	return GothCsrfToken{}, ErrUnimplemented
-}
-
-// GetCsrfToken retrieves a CSRF token by token.
-func (a *UnimplementedAdapter) GetCsrfToken(_ context.Context, token string) (GothCsrfToken, error) {
-	return GothCsrfToken{}, ErrUnimplemented
-}
-
-// DeleteCsrfToken deletes a CSRF token by token.
-func (a *UnimplementedAdapter) DeleteCsrfToken(_ context.Context, token string) error {
-	return ErrUnimplemented
 }
