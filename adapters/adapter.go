@@ -121,6 +121,11 @@ type GothSession struct {
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
+// GetUser returns the user of the session.
+func (s *GothSession) GetUser() GothUser {
+	return s.User
+}
+
 // GothCsrfToken is a CSRF token for a user
 type GothCsrfToken struct {
 	// ID is the unique identifier of the CSRF token.
