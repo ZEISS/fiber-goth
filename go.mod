@@ -11,7 +11,7 @@ require (
 	github.com/katallaxie/pkg v0.6.6
 	github.com/spf13/cobra v1.8.1
 	github.com/valyala/fasthttp v1.57.0
-	github.com/zeiss/pkg v0.1.13-0.20241019201052-9f5bf9d1a0df
+	github.com/zeiss/pkg v0.1.17
 	golang.org/x/crypto v0.28.0
 	golang.org/x/oauth2 v0.23.0
 	gorm.io/driver/postgres v1.5.9
