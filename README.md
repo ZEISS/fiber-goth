@@ -19,6 +19,19 @@ $ go get github.com/zeiss/fiber-goth
 * GitHub (github.com, Enterprise, and Enterprise Cloud)
 * Microsoft Entra ID
 
+## CSRF
+
+The middleware supports CSRF protection. It is added via the following package.
+
+```golang
+import "github.com/zeiss/fiber-goth/csrf"
+
+app := fiber.New()
+app.Use(csrf.New())
+```
+
+The CSRF protection depends on the session middleware.
+
 ## Examples
 
 See [examples](https://github.com/zeiss/fiber-goth/tree/master/examples) to understand the provided interfaces

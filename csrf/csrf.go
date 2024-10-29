@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/valyala/fasthttp"
 	goth "github.com/zeiss/fiber-goth"
 	"github.com/zeiss/fiber-goth/adapters"
 	"github.com/zeiss/pkg/slices"
@@ -22,6 +21,8 @@ var (
 	ErrMissingSession = fiber.NewError(fiber.StatusForbidden, "missing session in context")
 	// ErrGenerateToken is returned when the token generator returns an error.
 	ErrGenerateToken = fiber.NewError(fiber.StatusForbidden, "failed to generate csrf token")
+	// ErrMissingToken is returned when the token is missing from the request.
+	ErrMissingToken = fiber.NewError(fiber.StatusForbidden, "missing csrf token in request")
 )
 
 // HeaderName is the default header name used to extract the token.
@@ -56,35 +57,6 @@ type Config struct {
 	// Extractor is the function used to extract the token from the request.
 	Extractor func(c *fiber.Ctx) (string, error)
 
-	// Indicates if CSRF cookie is secure.
-	// Optional. Default value false.
-	CookieSecure bool
-
-	// Decides whether cookie should last for only the browser sesison.
-	// Ignores Expiration if set to true
-	CookieSessionOnly bool
-
-	// SingleUseToken indicates if the CSRF token be destroyed
-	// and a new one generated on each use.
-	//
-	// Optional. Default: false
-	SingleUseToken bool
-
-	// CookieName is the name of the cookie used to store the session.
-	CookieName string
-
-	// CookieSameSite is the SameSite attribute of the cookie.
-	CookieSameSite fasthttp.CookieSameSite
-
-	// CookiePath is the path of the cookie.
-	CookiePath string
-
-	// CookieDomain is the domain of the cookie.
-	CookieDomain string
-
-	// CookieHTTPOnly is the HTTPOnly attribute of the cookie.
-	CookieHTTPOnly bool
-
 	// TrustedOrigins is a list of origins that are allowed to set the cookie.
 	TrustedOrigins []string
 
@@ -98,8 +70,6 @@ type Config struct {
 // ConfigDefault is the default config.
 var ConfigDefault = Config{
 	IdleTimeout:    30 * time.Minute,
-	CookieName:     "csrf_",
-	CookieSameSite: fasthttp.CookieSameSiteLaxMode,
 	ErrorHandler:   defaultErrorHandler,
 	Extractor:      FromHeader(HeaderName),
 	TokenGenerator: DefaultCsrfTokenGenerator,
@@ -136,14 +106,6 @@ func configDefault(config ...Config) Config {
 
 	if cfg.IdleTimeout <= 0 {
 		cfg.IdleTimeout = ConfigDefault.IdleTimeout
-	}
-
-	if cfg.CookieName == "" {
-		cfg.CookieName = ConfigDefault.CookieName
-	}
-
-	if cfg.CookieSameSite == 0 {
-		cfg.CookieSameSite = ConfigDefault.CookieSameSite
 	}
 
 	if cfg.ErrorHandler == nil {
@@ -248,6 +210,45 @@ func FromHeader(param string) func(c *fiber.Ctx) (string, error) {
 
 		if utilx.Empty(token) {
 			return "", ErrMissingHeader
+		}
+
+		return token, nil
+	}
+}
+
+// FromParam returns a function that extracts token from the request query parameter.
+func FromParam(param string) func(c *fiber.Ctx) (string, error) {
+	return func(c *fiber.Ctx) (string, error) {
+		token := c.Params(param)
+
+		if utilx.Empty(token) {
+			return "", ErrMissingToken
+		}
+
+		return token, nil
+	}
+}
+
+// FromForm returns a function that extracts token from the request form.
+func FromForm(param string) func(c *fiber.Ctx) (string, error) {
+	return func(c *fiber.Ctx) (string, error) {
+		token := c.FormValue(param)
+
+		if utilx.Empty(token) {
+			return "", ErrMissingToken
+		}
+
+		return token, nil
+	}
+}
+
+// FromQuery returns a function that extracts token from the request query parameter.
+func FromQuery(param string) func(c *fiber.Ctx) (string, error) {
+	return func(c *fiber.Ctx) (string, error) {
+		token := c.Query(param)
+
+		if utilx.Empty(token) {
+			return "", ErrMissingToken
 		}
 
 		return token, nil
