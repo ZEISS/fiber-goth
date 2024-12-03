@@ -14,7 +14,7 @@ require (
 	github.com/zeiss/pkg v0.1.19
 	golang.org/x/crypto v0.29.0
 	golang.org/x/oauth2 v0.24.0
-	gorm.io/driver/postgres v1.5.10
+	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
 )
 
