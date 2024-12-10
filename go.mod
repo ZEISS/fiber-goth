@@ -10,7 +10,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/katallaxie/pkg v0.6.6
 	github.com/spf13/cobra v1.8.1
-	github.com/valyala/fasthttp v1.57.0
+	github.com/valyala/fasthttp v1.58.0
 	github.com/zeiss/pkg v0.1.19
 	golang.org/x/crypto v0.30.0
 	golang.org/x/oauth2 v0.24.0
