@@ -5,7 +5,7 @@ go 1.23
 toolchain go1.23.2
 
 require (
-	github.com/air-verse/air v1.61.1
+	github.com/air-verse/air v1.61.5
 	github.com/deepmap/oapi-codegen/v2 v2.2.0
 	github.com/golang/mock v1.6.0
 	github.com/golangci/golangci-lint v1.62.2
