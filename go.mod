@@ -5,7 +5,7 @@ go 1.22.1
 toolchain go1.23.0
 
 require (
-	github.com/gofiber/fiber/v2 v2.52.5
+	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
 	github.com/katallaxie/pkg v0.6.6
@@ -31,7 +31,7 @@ require (
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-runewidth v0.0.15 // indirect
+	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
