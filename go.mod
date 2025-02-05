@@ -1,6 +1,8 @@
 module github.com/zeiss/fiber-goth
 
 go 1.22.1
+toolchain go1.23.6
+
 require (
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/google/go-github/v56 v56.0.0
@@ -10,7 +12,7 @@ require (
 	github.com/valyala/fasthttp v1.58.0
 	github.com/zeiss/pkg v0.1.20
 	golang.org/x/crypto v0.32.0
-	golang.org/x/oauth2 v0.25.0
+	golang.org/x/oauth2 v0.26.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
 )
