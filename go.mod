@@ -7,7 +7,6 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
-	github.com/katallaxie/pkg v0.6.6
 	github.com/spf13/cobra v1.9.1
 	github.com/valyala/fasthttp v1.59.0
 	github.com/zeiss/pkg v0.1.23
@@ -19,6 +18,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.1.1 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -34,8 +34,6 @@ require (
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
