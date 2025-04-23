@@ -8,7 +8,7 @@ require (
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
 	github.com/spf13/cobra v1.9.1
-	github.com/valyala/fasthttp v1.60.0
+	github.com/valyala/fasthttp v1.61.0
 	github.com/zeiss/pkg v0.1.23
 	golang.org/x/crypto v0.37.0
 	golang.org/x/oauth2 v0.29.0
