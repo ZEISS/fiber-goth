@@ -9,7 +9,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/golangci/golangci-lint v1.64.8
 	github.com/goreleaser/goreleaser v1.26.2
-	gotest.tools/gotestsum v1.12.1
+	gotest.tools/gotestsum v1.12.2
 	mvdan.cc/gofumpt v0.8.0
 )
 
