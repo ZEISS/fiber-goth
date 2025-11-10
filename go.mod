@@ -12,7 +12,7 @@ require (
 	github.com/valyala/fasthttp v1.68.0
 	github.com/zeiss/pkg v0.1.23
 	golang.org/x/crypto v0.43.0
-	golang.org/x/oauth2 v0.32.0
+	golang.org/x/oauth2 v0.33.0
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
 )
