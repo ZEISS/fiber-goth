@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.10
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/valyala/fasthttp v1.68.0
 	github.com/zeiss/pkg v0.1.23
 	golang.org/x/crypto v0.45.0
