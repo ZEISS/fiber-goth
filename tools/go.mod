@@ -3,7 +3,7 @@ module tools
 go 1.25.0
 
 require (
-	github.com/air-verse/air v1.63.4
+	github.com/air-verse/air v1.64.0
 	github.com/deepmap/oapi-codegen/v2 v2.2.0
 	github.com/golang/mock v1.7.0-rc.1
 	github.com/golangci/golangci-lint v1.64.8
