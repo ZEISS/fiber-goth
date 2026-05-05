@@ -7,7 +7,7 @@ require (
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
 	github.com/spf13/cobra v1.10.2
-	github.com/valyala/fasthttp v1.70.0
+	github.com/valyala/fasthttp v1.71.0
 	github.com/zeiss/pkg v0.1.23
 	golang.org/x/crypto v0.50.0
 	golang.org/x/oauth2 v0.36.0
@@ -26,7 +26,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/klauspost/compress v1.18.5 // indirect
+	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
