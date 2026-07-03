@@ -3,11 +3,11 @@ package csrf
 import (
 	"time"
 
-	"github.com/zeiss/fiber-goth/adapters"
+	goth "github.com/zeiss/fiber-goth/v3"
+	"github.com/zeiss/fiber-goth/v3/adapters"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
-	goth "github.com/zeiss/fiber-goth"
 	"github.com/zeiss/pkg/slices"
 	"github.com/zeiss/pkg/utilx"
 )
@@ -39,7 +39,7 @@ const (
 // Config defines the config for csrf middleware.
 type Config struct {
 	// Next defines a function to skip this middleware when returned true.
-	Next func(c *fiber.Ctx) bool
+	Next func(c fiber.Ctx) bool
 
 	// Adapter is the adapter used to store the session.
 	// Adapter adapters.Adapter
@@ -55,7 +55,7 @@ type Config struct {
 	ErrorHandler fiber.ErrorHandler
 
 	// Extractor is the function used to extract the token from the request.
-	Extractor func(c *fiber.Ctx) (string, error)
+	Extractor func(c fiber.Ctx) (string, error)
 
 	// TrustedOrigins is a list of origins that are allowed to set the cookie.
 	TrustedOrigins []string
@@ -92,7 +92,7 @@ func DefaultCsrfTokenGenerator() (string, error) {
 }
 
 // DefaultErrorHandler is the default error handler for the CSRF middleware.
-func DefaultErrorHandler(_ *fiber.Ctx, _ error) error {
+func DefaultErrorHandler(_ fiber.Ctx, _ error) error {
 	return fiber.ErrForbidden
 }
 
@@ -138,7 +138,7 @@ func New(config ...Config) fiber.Handler {
 	cfg := configDefault(config...)
 
 	// Return new handler
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		// Skip middleware if Next returns true
 		if cfg.Next != nil && cfg.Next(c) {
 			return c.Next()
@@ -184,7 +184,7 @@ func New(config ...Config) fiber.Handler {
 			ExpiresAt: time.Now().Add(cfg.IdleTimeout),
 		}
 
-		session, err = cfg.Adapter.UpdateSession(c.Context(), session)
+		session, err = cfg.Adapter.UpdateSession(c, session)
 		if err != nil {
 			return cfg.ErrorHandler(c, err)
 		}
@@ -198,7 +198,7 @@ func New(config ...Config) fiber.Handler {
 }
 
 // TokenFromContext returns the CSRF token from the context.
-func TokenFromContext(c *fiber.Ctx) (string, error) {
+func TokenFromContext(c fiber.Ctx) (string, error) {
 	token, ok := c.Locals(csrfTokenKey).(adapters.GothCsrfToken)
 	if !ok {
 		return "", ErrTokenNotFound
@@ -208,8 +208,8 @@ func TokenFromContext(c *fiber.Ctx) (string, error) {
 }
 
 // FromHeader returns a function that extracts token from the request header.
-func FromHeader(param string) func(c *fiber.Ctx) (string, error) {
-	return func(c *fiber.Ctx) (string, error) {
+func FromHeader(param string) func(c fiber.Ctx) (string, error) {
+	return func(c fiber.Ctx) (string, error) {
 		token := c.Get(param)
 
 		if utilx.Empty(token) {
@@ -221,8 +221,8 @@ func FromHeader(param string) func(c *fiber.Ctx) (string, error) {
 }
 
 // FromParam returns a function that extracts token from the request query parameter.
-func FromParam(param string) func(c *fiber.Ctx) (string, error) {
-	return func(c *fiber.Ctx) (string, error) {
+func FromParam(param string) func(c fiber.Ctx) (string, error) {
+	return func(c fiber.Ctx) (string, error) {
 		token := c.Params(param)
 
 		if utilx.Empty(token) {
@@ -234,8 +234,8 @@ func FromParam(param string) func(c *fiber.Ctx) (string, error) {
 }
 
 // FromForm returns a function that extracts token from the request form.
-func FromForm(param string) func(c *fiber.Ctx) (string, error) {
-	return func(c *fiber.Ctx) (string, error) {
+func FromForm(param string) func(c fiber.Ctx) (string, error) {
+	return func(c fiber.Ctx) (string, error) {
 		token := c.FormValue(param)
 
 		if utilx.Empty(token) {
@@ -247,8 +247,8 @@ func FromForm(param string) func(c *fiber.Ctx) (string, error) {
 }
 
 // FromQuery returns a function that extracts token from the request query parameter.
-func FromQuery(param string) func(c *fiber.Ctx) (string, error) {
-	return func(c *fiber.Ctx) (string, error) {
+func FromQuery(param string) func(c fiber.Ctx) (string, error) {
+	return func(c fiber.Ctx) (string, error) {
 		token := c.Query(param)
 
 		if utilx.Empty(token) {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	goth "github.com/zeiss/fiber-goth"
-	"github.com/zeiss/fiber-goth/adapters"
+	goth "github.com/zeiss/fiber-goth/v3"
+	"github.com/zeiss/fiber-goth/v3/adapters"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

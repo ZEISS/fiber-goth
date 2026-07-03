@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zeiss/fiber-goth/adapters"
-	"github.com/zeiss/fiber-goth/providers"
+	"github.com/zeiss/fiber-goth/v3/adapters"
+	"github.com/zeiss/fiber-goth/v3/providers"
 
 	"github.com/google/uuid"
 	"github.com/zeiss/pkg/dbx"
@@ -62,6 +62,11 @@ func (a *authIntent) GetAuthURL() (string, error) {
 	}
 
 	return a.authURL, nil
+}
+
+// CodeVerifier returns the code verifier for PKCE, if applicable.
+func (a *authIntent) CodeVerifier() string {
+	return ""
 }
 
 // Opt is a function that configures the credentials provider.

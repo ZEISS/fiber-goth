@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/zeiss/fiber-goth/adapters"
-	"github.com/zeiss/fiber-goth/providers"
+	"github.com/zeiss/fiber-goth/v3/adapters"
+	"github.com/zeiss/fiber-goth/v3/providers"
 
 	"github.com/google/go-github/v56/github"
 	"github.com/zeiss/pkg/cast"
@@ -118,6 +118,11 @@ type authIntent struct {
 	codeVerifier string
 }
 
+// CodeVerifier returns the code verifier for PKCE.
+func (a *authIntent) CodeVerifier() string {
+	return a.codeVerifier
+}
+
 // GetAuthURL returns the URL for the authentication end-point.
 func (a *authIntent) GetAuthURL() (string, error) {
 	if a.authURL == "" {
@@ -156,14 +161,12 @@ func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adap
 		Location string `json:"location"`
 	}{}
 
-	verifier := oauth2.GenerateVerifier()
-
 	code := params.Get("code")
 	if code == "" {
 		return adapters.GothUser{}, adapters.ErrUnimplemented
 	}
 
-	token, err := g.config.Exchange(ctx, code, oauth2.SetAuthURLParam("code_verifier", verifier))
+	token, err := g.config.Exchange(ctx, code, oauth2.SetAuthURLParam("code_verifier", params.CodeVerifier()))
 	if err != nil {
 		return adapters.GothUser{}, err
 	}

@@ -11,20 +11,21 @@ A [fiber](https://gofiber.io/) :rocket: middleware to integrate authentication t
 ## Installation
 
 ```bash
-$ go get github.com/zeiss/fiber-goth
+$ go get github.com/zeiss/fiber-goth/v3
 ```
 
 ## Providers
 
 * GitHub (github.com, Enterprise, and Enterprise Cloud)
 * Microsoft Entra ID
+* [Dex](https://dexidp.io)
 
 ## CSRF
 
 The middleware supports CSRF protection. It is added via the following package.
 
 ```golang
-import "github.com/zeiss/fiber-goth/csrf"
+import "github.com/zeiss/fiber-goth/v3/csrf"
 
 app := fiber.New()
 app.Use(csrf.New())

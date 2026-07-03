@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/zeiss/fiber-goth/adapters"
+	"github.com/zeiss/fiber-goth/v3/adapters"
 )
 
 const (
@@ -26,11 +26,16 @@ var DefaultClient = &http.Client{
 	Timeout: defaultTimeout,
 }
 
-// ErrUnimplemented is returned when a method is not implemented.
-var ErrUnimplemented = errors.New("not implemented")
-
-// ErrNoAuthURL is returned when an AuthURL has not been set.
-var ErrNoAuthURL = errors.New("an AuthURL has not been set")
+var (
+	// ErrUnimplemented is returned when a method is not implemented.
+	ErrUnimplemented = errors.New("not implemented")
+	// ErrNoAuthURL is returned when an AuthURL has not been set.
+	ErrNoAuthURL = errors.New("an AuthURL has not been set")
+	// ErrFailedVerifyToken is returned when a token verification fails.
+	ErrFailedVerifyToken = errors.New("failed to verify token")
+	// ErrMissingPrimaryEmail is returned when a primary email is not found.
+	ErrMissingPrimaryEmail = errors.New("missing primary email")
+)
 
 // Provider needs to be implemented for each 3rd party authentication provider.
 type Provider interface {
@@ -50,13 +55,18 @@ type Provider interface {
 
 // AuthParams is the type of authentication parameters.
 type AuthParams interface {
+	//  Get returns the value of a parameter by name.
 	Get(string) string
+	// CodeVerifier returns the code verifier for PKCE, if applicable.
+	CodeVerifier() string
 }
 
 // AuthIntent is the type of authentication intent.
 type AuthIntent interface {
 	// GetAuthURL returns the URL for the authentication end-point.
 	GetAuthURL() (string, error)
+	// CodeVerifier returns the code verifier for PKCE, if applicable.
+	CodeVerifier() string
 }
 
 // PrioviderType is the type of provider.

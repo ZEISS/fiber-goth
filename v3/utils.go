@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
+	"github.com/valyala/fasthttp"
 )
 
 // GenerateKey Generates an encryption key.
@@ -84,4 +86,16 @@ func DecryptCookie(value, key string) (string, error) {
 	}
 
 	return string(plaintext), nil
+}
+
+// NewStateCookie creates a new state cookie.
+func NewStateCookie(name, value string, secure bool) *fasthttp.Cookie {
+	c := &fasthttp.Cookie{}
+	c.SetKey(name)
+	c.SetValue(value)
+	c.SetMaxAge(300)
+	c.SetSecure(secure)
+	c.SetHTTPOnly(true)
+
+	return c
 }

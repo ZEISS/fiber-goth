@@ -7,31 +7,61 @@ package goth
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/utils"
-	"github.com/valyala/fasthttp"
-	"github.com/zeiss/fiber-goth/adapters"
-	"github.com/zeiss/fiber-goth/providers"
+	"github.com/gofiber/fiber/v3"
+	"github.com/zeiss/fiber-goth/v3/adapters"
+	"github.com/zeiss/fiber-goth/v3/providers"
+	"github.com/zeiss/pkg/utilx"
 )
 
 var _ Handler = (*BeginAuthHandler)(nil)
 
 const charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
 
+// Environment represents the environment the application is running in.
+type Environment string
+
+// StateCtx holds the state of the authentication process.
+type StateCtx struct {
+	Nounce      string `json:"nounce"`
+	RedirectURL string `json:"redirect_url"`
+}
+
+const (
+	// Noop is a no-op function.
+	Noop Environment = "noop"
+	// Development environment.
+	Development Environment = "development"
+	// Testing environment.
+	Testing Environment = "testing"
+	// Staging environment.
+	Staging Environment = "staging"
+	// Production environment.
+	Production Environment = "production"
+)
+
 // Params maps the parameters of the Fiber context to the gothic context.
 type Params struct {
-	ctx *fiber.Ctx
+	ctx          fiber.Ctx
+	codeVerifier string
 }
 
 // Get returns the value of a query paramater.
 func (p *Params) Get(key string) string {
 	return p.ctx.Query(key)
+}
+
+// CodeVerifier returns the code verifier for PKCE, if applicable.
+func (p *Params) CodeVerifier() string {
+	return p.codeVerifier
 }
 
 // The contextKey type is unexported to prevent collisions with context keys defined in
@@ -44,6 +74,11 @@ const (
 	sessionKey
 	tokenKey
 	userIDKey
+)
+
+const (
+	SessionScope      = "session"
+	CodeVerifierScope = "code_verifier"
 )
 
 // Error is the default error type for the goth middleware.
@@ -92,7 +127,7 @@ const (
 )
 
 // ProviderFromContext returns the provider from the request context.
-func ProviderFromContext(c *fiber.Ctx) string {
+func ProviderFromContext(c fiber.Ctx) string {
 	return c.Get(fmt.Sprint(providerKey))
 }
 
@@ -101,17 +136,17 @@ type SessionHandler struct{}
 
 // New creates a new handler to manage the session.
 func (SessionHandler) New(cfg Config) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		if cfg.Next != nil && cfg.Next(c) {
 			return c.Next()
 		}
 
-		cookie := c.Cookies(cfg.CookieName)
+		cookie := c.Cookies(cfg.CookieName(SessionScope))
 		if cookie == "" {
 			return cfg.ErrorHandler(c, ErrMissingCookie)
 		}
 
-		session, err := cfg.Adapter.GetSession(c.Context(), cookie)
+		session, err := cfg.Adapter.GetSession(c, cookie)
 		if err != nil {
 			return cfg.ErrorHandler(c, err)
 		}
@@ -130,21 +165,22 @@ func (SessionHandler) New(cfg Config) fiber.Handler {
 		expires := time.Now().Add(duration)
 		session.ExpiresAt = expires
 
-		session, err = cfg.Adapter.RefreshSession(c.Context(), session)
+		session, err = cfg.Adapter.RefreshSession(c, session)
 		if err != nil {
 			return cfg.ErrorHandler(c, err)
 		}
 
-		cookieValue := fasthttp.Cookie{}
-		cookieValue.SetKey(cfg.CookieName)
-		cookieValue.SetValueBytes([]byte(session.SessionToken))
-		cookieValue.SetHTTPOnly(true)
-		cookieValue.SetSameSite(cfg.CookieSameSite)
-		cookieValue.SetExpire(expires)
-		cookieValue.SetPath(cfg.CookiePath)
-		cookieValue.SetSecure(cfg.CookieSecure)
+		cookieValue := &fiber.Cookie{
+			Name:     cfg.SessionCookieName(),
+			Value:    session.SessionToken,
+			HTTPOnly: true,
+			SameSite: cfg.CookieSameSite,
+			Expires:  expires,
+			Path:     cfg.CookiePath,
+			Secure:   cfg.CookieSecure,
+		}
 
-		c.Response().Header.SetCookie(&cookieValue)
+		c.Cookie(cookieValue)
 
 		return c.Next()
 	}
@@ -162,7 +198,7 @@ type BeginAuthHandler struct{}
 
 // New creates a new handler to begin authentication.
 func (BeginAuthHandler) New(cfg Config) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		if cfg.Next != nil && cfg.Next(c) {
 			return c.Next()
 		}
@@ -182,7 +218,7 @@ func (BeginAuthHandler) New(cfg Config) fiber.Handler {
 			return err
 		}
 
-		intent, err := provider.BeginAuth(c.Context(), cfg.Adapter, state, &Params{ctx: c})
+		intent, err := provider.BeginAuth(c, cfg.Adapter, state, &Params{ctx: c})
 		if err != nil {
 			return err
 		}
@@ -192,7 +228,17 @@ func (BeginAuthHandler) New(cfg Config) fiber.Handler {
 			return err
 		}
 
-		return c.Redirect(url, fiber.StatusTemporaryRedirect)
+		cookie := &fiber.Cookie{
+			Name:     cfg.CodeVerifierCookieName(),
+			Value:    intent.CodeVerifier(),
+			Path:     "/",
+			MaxAge:   300,
+			Secure:   utilx.NotEqual(cfg.Environment, Development),
+			HTTPOnly: true,
+		}
+		c.Cookie(cookie)
+
+		return c.Redirect().Status(fiber.StatusTemporaryRedirect).To(url)
 	}
 }
 
@@ -204,7 +250,6 @@ type Handler interface {
 // NewBeginAuthHandler creates a new middleware handler to start authentication.
 func NewBeginAuthHandler(config ...Config) fiber.Handler {
 	cfg := configDefault(config...)
-
 	return cfg.BeginAuthHandler.New(cfg)
 }
 
@@ -215,7 +260,7 @@ type CompleteAuthCompleteHandler struct{}
 //
 //nolint:gocyclo
 func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		if cfg.Next != nil && cfg.Next(c) {
 			return c.Next()
 		}
@@ -230,7 +275,12 @@ func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 			return cfg.ErrorHandler(c, ErrMissingProviderName)
 		}
 
-		user, err := provider.CompleteAuth(c.Context(), cfg.Adapter, &Params{ctx: c})
+		codeVerifier, err := CodeVerifierFromCookie(c, cfg)
+		if err != nil {
+			return cfg.ErrorHandler(c, err)
+		}
+
+		user, err := provider.CompleteAuth(c, cfg.Adapter, &Params{ctx: c, codeVerifier: codeVerifier})
 		if err != nil {
 			return cfg.ErrorHandler(c, ErrMissingUser)
 		}
@@ -241,23 +291,24 @@ func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 		}
 		expires := time.Now().Add(duration)
 
-		session, err := cfg.Adapter.CreateSession(c.Context(), user.ID, expires)
+		session, err := cfg.Adapter.CreateSession(c, user.ID, expires)
 		if err != nil {
 			return cfg.ErrorHandler(c, ErrMissingSession)
 		}
 
-		cookieValue := fasthttp.Cookie{}
-		cookieValue.SetKeyBytes([]byte(cfg.CookieName))
-		cookieValue.SetValueBytes([]byte(session.SessionToken))
-		cookieValue.SetHTTPOnly(true)
-		cookieValue.SetSameSite(fasthttp.CookieSameSiteLaxMode)
-		cookieValue.SetExpire(expires)
-		cookieValue.SetPath("/")
-		cookieValue.SetSecure(cfg.CookieSecure)
+		cookieValue := &fiber.Cookie{
+			Name:     cfg.SessionCookieName(),
+			Value:    session.SessionToken,
+			HTTPOnly: true,
+			SameSite: cfg.CookieSameSite,
+			Secure:   cfg.CookieSecure,
+			Expires:  expires,
+			Domain:   cfg.CookieDomain,
+			Path:     "/",
+		}
 
 		c.Vary(fiber.HeaderCookie)
-
-		c.Response().Header.SetCookie(&cookieValue)
+		c.Cookie(cookieValue)
 
 		return cfg.CompletionFilter(c)
 	}
@@ -282,7 +333,7 @@ func NewLogoutHandler(config ...Config) fiber.Handler {
 
 // New creates a new handler to logout.
 func (LogoutHandler) New(cfg Config) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		if cfg.Next != nil && cfg.Next(c) {
 			return c.Next()
 		}
@@ -292,79 +343,84 @@ func (LogoutHandler) New(cfg Config) fiber.Handler {
 			return cfg.ErrorHandler(c, err)
 		}
 
-		err = cfg.Adapter.DeleteSession(c.Context(), token)
+		err = cfg.Adapter.DeleteSession(c, token)
 		if err != nil {
 			return cfg.ErrorHandler(c, err)
 		}
 
-		c.ClearCookie(cfg.CookieName)
+		c.ClearCookie(cfg.SessionCookieName())
 
 		return cfg.CompletionFilter(c)
 	}
 }
 
-// ProtectMiddleware is the default handler for the protection process.
-type ProtectMiddleware struct{}
-
-// NewProtectMiddleware returns a new default protect handler.
-//
-//nolint:gocyclo
-func NewProtectMiddleware(config ...Config) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		cfg := configDefault(config...)
-
+// Protect is a middleware that protects routes by checking for a valid session.
+func Protect(config ...Config) fiber.Handler {
+	cfg := configDefault(config...)
+	return func(c fiber.Ctx) error {
 		if cfg.Next != nil && cfg.Next(c) {
 			return c.Next()
 		}
 
-		if strings.HasPrefix(c.Path(), cfg.LoginURL) {
+		if ValidSession(c) {
 			return c.Next()
 		}
 
-		if strings.HasPrefix(c.Path(), cfg.LogoutURL) {
+		u, err := url.Parse(cfg.LoginURL)
+		if err != nil {
 			return c.Next()
 		}
 
-		if strings.HasPrefix(c.Path(), cfg.CallbackURL) {
-			return c.Next()
-		}
+		q := u.Query()
+		q.Set("redirect_uri", c.FullURL())
+		u.RawQuery = q.Encode()
 
+		return c.Redirect().Status(fiber.StatusTemporaryRedirect).To(u.String())
+	}
+}
+
+// Session is the default handler to attach the session to the context.
+func Session(config ...Config) fiber.Handler {
+	cfg := configDefault(config...)
+	return func(c fiber.Ctx) error {
 		token, err := cfg.Extractor(c)
 		if err != nil {
-			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
+			return c.Next()
 		}
 
-		session, err := cfg.Adapter.GetSession(c.Context(), token)
+		session, err := cfg.Adapter.GetSession(c, token)
 		if err != nil {
-			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
+			return c.Next()
 		}
 
 		if !session.IsValid() {
-			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
+			return c.Next()
 		}
 
 		duration, err := time.ParseDuration(cfg.Expiry)
 		if err != nil {
-			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
+			return c.Next()
 		}
 		expires := time.Now().Add(duration)
 		session.ExpiresAt = expires
 
-		session, err = cfg.Adapter.RefreshSession(c.Context(), session)
+		session, err = cfg.Adapter.RefreshSession(c, session)
 		if err != nil {
-			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
+			return c.Next()
 		}
 
-		cookieValue := fasthttp.Cookie{}
-		cookieValue.SetKey(cfg.CookieName)
-		cookieValue.SetValueBytes([]byte(session.SessionToken))
-		cookieValue.SetHTTPOnly(true)
-		cookieValue.SetSameSite(cfg.CookieSameSite)
-		cookieValue.SetExpire(expires)
-		cookieValue.SetPath(cfg.CookiePath)
-		cookieValue.SetSecure(cfg.CookieSecure)
+		cookieValue := &fiber.Cookie{
+			Name:     cfg.SessionCookieName(),
+			Value:    session.SessionToken,
+			HTTPOnly: true,
+			SameSite: cfg.CookieSameSite,
+			Expires:  expires,
+			Path:     cfg.CookiePath,
+			Secure:   cfg.CookieSecure,
+			Domain:   cfg.CookieDomain,
+		}
 
-		c.Response().Header.SetCookie(&cookieValue)
+		c.Cookie(cookieValue)
 
 		c.Locals(tokenKey, session.ID)
 		c.Locals(sessionKey, session)
@@ -374,76 +430,45 @@ func NewProtectMiddleware(config ...Config) fiber.Handler {
 	}
 }
 
-// ProtectedHandler is the default handler for the validation process.
-type ProtectedHandler struct{}
-
-// NewProtectedHandler returns a new default protected handler.
-func NewProtectedHandler(handler fiber.Handler, config ...Config) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		cfg := configDefault(config...)
-
+// ProtectedHandler returns a new default protected handler.
+func ProtectedHandler(handler fiber.Handler, config ...Config) fiber.Handler {
+	cfg := configDefault(config...)
+	return func(c fiber.Ctx) error {
 		if cfg.Next != nil && cfg.Next(c) {
 			return c.Next()
 		}
 
-		token, err := cfg.Extractor(c)
+		if ValidSession(c) {
+			return handler(c)
+		}
+
+		u, err := url.Parse(cfg.LoginURL)
 		if err != nil {
-			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
+			return c.Next()
 		}
 
-		session, err := cfg.Adapter.GetSession(c.Context(), token)
-		if err != nil {
-			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
-		}
+		q := u.Query()
+		q.Set("redirect_uri", c.FullURL())
+		u.RawQuery = q.Encode()
 
-		if !session.IsValid() {
-			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
-		}
-
-		duration, err := time.ParseDuration(cfg.Expiry)
-		if err != nil {
-			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
-		}
-		expires := time.Now().Add(duration)
-		session.ExpiresAt = expires
-
-		session, err = cfg.Adapter.RefreshSession(c.Context(), session)
-		if err != nil {
-			return c.Redirect(cfg.LoginURL, fiber.StatusTemporaryRedirect)
-		}
-
-		cookieValue := fasthttp.Cookie{}
-		cookieValue.SetKey(cfg.CookieName)
-		cookieValue.SetValueBytes([]byte(session.SessionToken))
-		cookieValue.SetHTTPOnly(true)
-		cookieValue.SetSameSite(cfg.CookieSameSite)
-		cookieValue.SetExpire(expires)
-		cookieValue.SetPath(cfg.CookiePath)
-
-		c.Response().Header.SetCookie(&cookieValue)
-
-		c.Locals(tokenKey, session.ID)
-		c.Locals(sessionKey, session)
-		c.Locals(userIDKey, session.UserID)
-
-		return handler(c)
+		return c.Redirect().Status(fiber.StatusTemporaryRedirect).To(u.String())
 	}
 }
 
 // GetStateFromContext return the state that is returned during the callback.
-func GetStateFromContext(ctx *fiber.Ctx) string {
+func GetStateFromContext(ctx fiber.Ctx) string {
 	return ctx.Query(state)
 }
 
 // ContextWithProvider returns a new request context containing the provider.
-func ContextWithProvider(ctx *fiber.Ctx, provider string) *fiber.Ctx {
+func ContextWithProvider(ctx fiber.Ctx, provider string) fiber.Ctx {
 	ctx.Set(fmt.Sprint(providerKey), provider)
 
 	return ctx
 }
 
-// Session from the request context.
-func SessionFromContext(c *fiber.Ctx) (adapters.GothSession, error) {
+// SessionFromContext returns the session from the request context.
+func SessionFromContext(c fiber.Ctx) (adapters.GothSession, error) {
 	session, ok := c.Locals(sessionKey).(adapters.GothSession)
 	if !ok {
 		return adapters.GothSession{}, ErrMissingSession
@@ -452,10 +477,16 @@ func SessionFromContext(c *fiber.Ctx) (adapters.GothSession, error) {
 	return session, nil
 }
 
+// ValidSession returns true if the session is valid.
+func ValidSession(c fiber.Ctx) bool {
+	_, ok := c.Locals(sessionKey).(adapters.GothSession)
+	return ok
+}
+
 // Config caputes the configuration for running the goth middleware.
 type Config struct {
 	// Next defines a function to skip this middleware when returned true.
-	Next func(c *fiber.Ctx) bool
+	Next func(c fiber.Ctx) bool
 
 	// BeginAuthHandler is the handler to start authentication.
 	BeginAuthHandler Handler
@@ -472,11 +503,8 @@ type Config struct {
 	// IndexHandler is the handler to display the index.
 	IndexHandler fiber.Handler
 
-	// ProtectedHandler is the handler to protect the route.
-	ProtectedHandler fiber.Handler
-
 	// CompletionFilter that is executed when responses need to returned.
-	CompletionFilter func(c *fiber.Ctx) error
+	CompletionFilter func(c fiber.Ctx) error
 
 	// Secret is the secret used to sign the session.
 	Secret string
@@ -484,11 +512,11 @@ type Config struct {
 	// Expiry is the duration that the session is valid for.
 	Expiry string
 
-	// CookieName is the name of the cookie used to store the session.
-	CookieName string
+	// CookiePrefix is the prefix of the cookies used to store session data.
+	CookiePrefix string
 
 	// CookieSameSite is the SameSite attribute of the cookie.
-	CookieSameSite fasthttp.CookieSameSite
+	CookieSameSite string
 
 	// CookiePath is the path of the cookie.
 	CookiePath string
@@ -530,7 +558,31 @@ type Config struct {
 	ErrorHandler fiber.ErrorHandler
 
 	// Extractor is the function used to extract the token from the request.
-	Extractor func(c *fiber.Ctx) (string, error)
+	Extractor func(c fiber.Ctx) (string, error)
+
+	// Environment is the environment the application is running in.
+	Environment Environment
+}
+
+// CookieName returns the cookie name with the prefix.
+func (cfg *Config) CookieName(scope string) string {
+	var s strings.Builder
+
+	s.WriteString(cfg.CookiePrefix)
+	s.WriteString(".")
+	s.WriteString(scope)
+
+	return s.String()
+}
+
+// SessionCookieName returns the session cookie name with the prefix.
+func (cfg *Config) SessionCookieName() string {
+	return cfg.CookieName(SessionScope)
+}
+
+// CodeVerifierCookieName returns the code verifier cookie name with the prefix.
+func (cfg *Config) CodeVerifierCookieName() string {
+	return cfg.CookieName(CodeVerifierScope)
 }
 
 // ConfigDefault is the default config.
@@ -544,34 +596,41 @@ var ConfigDefault = Config{
 	Encryptor:           EncryptCookie,
 	Decryptor:           DecryptCookie,
 	Expiry:              "7h",
-	CookieName:          "fiber_goth.session",
 	Extractor:           TokenFromCookie("fiber_goth.session"),
-	CookieSameSite:      fasthttp.CookieSameSiteLaxMode,
+	CookieSameSite:      "lax",
 	CompletionURL:       "/",
 	LoginURL:            "/login",
 	LogoutURL:           "/logout",
 	CallbackURL:         "/auth",
+	CookiePrefix:        "fiber_goth",
+	CookieSecure:        false,
+	Environment:         Development,
 }
 
 // default ErrorHandler that process return error from fiber.Handler.
-func defaultErrorHandler(_ *fiber.Ctx, err error) error {
+func defaultErrorHandler(_ fiber.Ctx, err error) error {
 	return NewError(http.StatusBadRequest, err.Error())
 }
 
 // default filter for response that process default return.
-func defaultCompletionFilter(completionURL string) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		return c.Redirect(completionURL, fiber.StatusTemporaryRedirect)
+func defaultCompletionFilter() fiber.Handler {
+	return func(c fiber.Ctx) error {
+		state, err := contextFromState(c.Query("state"))
+		if err != nil {
+			return NewError(http.StatusBadRequest, err.Error())
+		}
+
+		return c.Redirect().Status(http.StatusTemporaryRedirect).To(state.RedirectURL)
 	}
 }
 
 // default index handler that process default return.
-func defaultIndexHandler(c *fiber.Ctx) error {
+func defaultIndexHandler(c fiber.Ctx) error {
 	if c.Path() == "/login" {
 		return c.Next()
 	}
 
-	return c.Redirect("/login", fiber.StatusTemporaryRedirect)
+	return c.Redirect().Status(http.StatusTemporaryRedirect).To("/login")
 }
 
 // Helper function to set default values
@@ -625,11 +684,7 @@ func configDefault(config ...Config) Config {
 		cfg.Expiry = ConfigDefault.Expiry
 	}
 
-	if cfg.CookieName == "" {
-		cfg.CookieName = ConfigDefault.CookieName
-	}
-
-	if cfg.CookieSameSite == 0 {
+	if cfg.CookieSameSite == "" {
 		cfg.CookieSameSite = ConfigDefault.CookieSameSite
 	}
 
@@ -649,29 +704,60 @@ func configDefault(config ...Config) Config {
 		cfg.CallbackURL = ConfigDefault.CallbackURL
 	}
 
+	if utilx.Empty(cfg.CookiePrefix) {
+		cfg.CookiePrefix = ConfigDefault.CookiePrefix
+	}
+
 	if cfg.ErrorHandler == nil {
 		cfg.ErrorHandler = ConfigDefault.ErrorHandler
 	}
 
 	if cfg.CompletionFilter == nil {
-		cfg.CompletionFilter = defaultCompletionFilter(cfg.CompletionURL)
+		cfg.CompletionFilter = defaultCompletionFilter()
+	}
+
+	if utilx.Empty(cfg.Environment) {
+		cfg.Environment = ConfigDefault.Environment
 	}
 
 	return cfg
 }
 
-func stateFromContext(ctx *fiber.Ctx) (string, error) {
-	state := ctx.Query(state)
-	if len(state) > 0 {
-		return state, nil
+func contextFromState(state string) (*StateCtx, error) {
+	if state == "" {
+		return &StateCtx{}, nil
 	}
 
+	stateBytes, err := base64.URLEncoding.DecodeString(state)
+	if err != nil {
+		return nil, err
+	}
+
+	var s StateCtx
+	if err := json.Unmarshal(stateBytes, &s); err != nil {
+		return nil, err
+	}
+
+	return &s, nil
+}
+
+func stateFromContext(ctx fiber.Ctx) (string, error) {
 	nonce, err := generateRandomString(64) //nolint:mnd
 	if err != nil {
 		return "", err
 	}
 
-	return base64.URLEncoding.EncodeToString(nonce), nil
+	s := &StateCtx{
+		Nounce:      string(nonce),
+		RedirectURL: ctx.Query("redirect_uri"),
+	}
+
+	state, err := json.Marshal(s)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.URLEncoding.EncodeToString(state), nil
 }
 
 func generateRandomString(n int) ([]byte, error) {
@@ -689,7 +775,7 @@ func generateRandomString(n int) ([]byte, error) {
 }
 
 // TokenFromContext returns the token from the request context.
-func TokenFromContext(c *fiber.Ctx) string {
+func TokenFromContext(c fiber.Ctx) string {
 	token, ok := c.Locals(tokenKey).(string)
 	if !ok {
 		return ""
@@ -699,8 +785,8 @@ func TokenFromContext(c *fiber.Ctx) string {
 }
 
 // TokenFromCookie returns a function that extracts token from the cookie header.
-func TokenFromCookie(param string) func(c *fiber.Ctx) (string, error) {
-	return func(c *fiber.Ctx) (string, error) {
+func TokenFromCookie(param string) func(c fiber.Ctx) (string, error) {
+	return func(c fiber.Ctx) (string, error) {
 		token := c.Cookies(param)
 		if token == "" {
 			return "", ErrMissingCookie
@@ -708,4 +794,14 @@ func TokenFromCookie(param string) func(c *fiber.Ctx) (string, error) {
 
 		return token, nil
 	}
+}
+
+// CodeVerifierFromCookie returns the code verifier from the cookie.
+func CodeVerifierFromCookie(c fiber.Ctx, cfg Config) (string, error) {
+	cookie := c.Cookies(cfg.CodeVerifierCookieName())
+	if cookie == "" {
+		return "", ErrMissingCookie
+	}
+
+	return cookie, nil
 }

@@ -1,0 +1,6026 @@
+---
+openapi: 3.0.4
+info:
+  title: Fiber Goth API
+  description: API Reference for your Fiber Goth Instance
+  version: 1.0.0
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        emailVerified:
+          type: boolean
+          default: false
+          readOnly: true
+        image:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+          default: Generated at runtime
+        updatedAt:
+          type: string
+          format: date-time
+          default: Generated at runtime
+      required:
+      - name
+      - email
+      - createdAt
+      - updatedAt
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        token:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+          default: Generated at runtime
+        updatedAt:
+          type: string
+          format: date-time
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        userId:
+          type: string
+        activeOrganizationId:
+          type: string
+        activeTeamId:
+          type: string
+      required:
+      - expiresAt
+      - token
+      - createdAt
+      - updatedAt
+      - userId
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+        accountId:
+          type: string
+        providerId:
+          type: string
+        userId:
+          type: string
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        idToken:
+          type: string
+        accessTokenExpiresAt:
+          type: string
+          format: date-time
+        refreshTokenExpiresAt:
+          type: string
+          format: date-time
+        scope:
+          type: string
+        password:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+          default: Generated at runtime
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - accountId
+      - providerId
+      - userId
+      - createdAt
+      - updatedAt
+    Verification:
+      type: object
+      properties:
+        id:
+          type: string
+        identifier:
+          type: string
+        value:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+          default: Generated at runtime
+        updatedAt:
+          type: string
+          format: date-time
+          default: Generated at runtime
+      required:
+      - identifier
+      - value
+      - expiresAt
+      - createdAt
+      - updatedAt
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        logo:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        metadata:
+          type: string
+      required:
+      - name
+      - slug
+      - createdAt
+    Team:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        organizationId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - name
+      - organizationId
+      - createdAt
+    TeamMember:
+      type: object
+      properties:
+        id:
+          type: string
+        teamId:
+          type: string
+        userId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - teamId
+      - userId
+    Member:
+      type: object
+      properties:
+        id:
+          type: string
+        organizationId:
+          type: string
+        userId:
+          type: string
+        role:
+          type: string
+          default: member
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - organizationId
+      - userId
+      - role
+      - createdAt
+    Invitation:
+      type: object
+      properties:
+        id:
+          type: string
+        organizationId:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        teamId:
+          type: string
+        status:
+          type: string
+          default: pending
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+          default: Generated at runtime
+        inviterId:
+          type: string
+      required:
+      - organizationId
+      - email
+      - status
+      - expiresAt
+      - createdAt
+      - inviterId
+  securitySchemes:
+    apiKeyCookie:
+      type: apiKey
+      in: cookie
+      name: apiKeyCookie
+      description: API Key authentication via cookie
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Bearer token authentication
+security:
+- apiKeyCookie: []
+  bearerAuth: []
+servers:
+- url: http://localhost:3000/api/auth
+tags:
+- name: Default
+  description: Default endpoints that are included with Better Auth by default. These
+    endpoints are not part of any plugin.
+paths:
+  "/sign-in/social":
+    post:
+      tags:
+      - Default
+      description: Sign in with a social provider
+      operationId: socialSignIn
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callbackURL:
+                  type:
+                  - string
+                  description: Callback URL to redirect to after the user has signed
+                    in
+                newUserCallbackURL:
+                  type:
+                  - string
+                errorCallbackURL:
+                  type:
+                  - string
+                  description: Callback URL to redirect to if an error happens
+                provider:
+                  type: string
+                disableRedirect:
+                  type:
+                  - boolean
+                  description: Disable automatic redirection to the provider. Useful
+                    for handling the redirection yourself
+                idToken:
+                  type:
+                  - object
+                  properties:
+                    token:
+                      type: string
+                      description: ID token from the provider
+                    nonce:
+                      type:
+                      - string
+                      description: Nonce used to generate the token
+                    accessToken:
+                      type:
+                      - string
+                      description: Access token from the provider
+                    refreshToken:
+                      type:
+                      - string
+                      description: Refresh token from the provider
+                    expiresAt:
+                      type:
+                      - number
+                      description: Expiry date of the token
+                  required:
+                  - token
+                scopes:
+                  type:
+                  - array
+                  description: Array of scopes to request from the provider. This
+                    will override the default scopes passed.
+                requestSignUp:
+                  type:
+                  - boolean
+                  description: Explicitly request sign-up. Useful when disableImplicitSignUp
+                    is true for this provider
+                loginHint:
+                  type:
+                  - string
+                  description: The login hint to use for the authorization code request
+                additionalData:
+                  type:
+                  - string
+              required:
+              - provider
+      responses:
+        '200':
+          description: Success - Returns either session details or redirect URL
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Session response when idToken is provided
+                properties:
+                  token:
+                    type: string
+                  user:
+                    type: object
+                    "$ref": "#/components/schemas/User"
+                  url:
+                    type: string
+                  redirect:
+                    type: boolean
+                    default: false
+                required:
+                - redirect
+                - token
+                - user
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/get-session":
+    get:
+      tags:
+      - Default
+      description: Get the current session
+      operationId: getSession
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                nullable: true
+                properties:
+                  session:
+                    "$ref": "#/components/schemas/Session"
+                  user:
+                    "$ref": "#/components/schemas/User"
+                required:
+                - session
+                - user
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/sign-out":
+    post:
+      tags:
+      - Default
+      description: Sign out the current user
+      operationId: signOut
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/sign-up/email":
+    post:
+      tags:
+      - Default
+      description: Sign up a user using email and password
+      operationId: signUpWithEmailAndPassword
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The name of the user
+                email:
+                  type: string
+                  description: The email of the user
+                password:
+                  type: string
+                  description: The password of the user
+                image:
+                  type: string
+                  description: The profile image URL of the user
+                callbackURL:
+                  type: string
+                  description: The URL to use for email verification callback
+                rememberMe:
+                  type: boolean
+                  description: If this is false, the session will not be remembered.
+                    Default is `true`.
+              required:
+              - name
+              - email
+              - password
+      responses:
+        '200':
+          description: Successfully created user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    nullable: true
+                    description: Authentication token for the session
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: The unique identifier of the user
+                      email:
+                        type: string
+                        format: email
+                        description: The email address of the user
+                      name:
+                        type: string
+                        description: The name of the user
+                      image:
+                        type: string
+                        format: uri
+                        nullable: true
+                        description: The profile image URL of the user
+                      emailVerified:
+                        type: boolean
+                        description: Whether the email has been verified
+                      createdAt:
+                        type: string
+                        format: date-time
+                        description: When the user was created
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        description: When the user was last updated
+                    required:
+                    - id
+                    - email
+                    - name
+                    - emailVerified
+                    - createdAt
+                    - updatedAt
+                required:
+                - user
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '422':
+          description: Unprocessable Entity. User already exists or failed to create
+            user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/sign-in/email":
+    post:
+      tags:
+      - Default
+      description: Sign in with email and password
+      operationId: signInEmail
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: Email of the user
+                password:
+                  type: string
+                  description: Password of the user
+                callbackURL:
+                  type:
+                  - string
+                  description: Callback URL to use as a redirect for email verification
+                rememberMe:
+                  type:
+                  - string
+              required:
+              - email
+              - password
+      responses:
+        '200':
+          description: Success - Returns either session details or redirect URL
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Session response when idToken is provided
+                properties:
+                  redirect:
+                    type: boolean
+                    default: false
+                  token:
+                    type: string
+                    description: Session token
+                  url:
+                    type: string
+                    nullable: true
+                  user:
+                    type: object
+                    "$ref": "#/components/schemas/User"
+                required:
+                - redirect
+                - token
+                - user
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/reset-password":
+    post:
+      tags:
+      - Default
+      description: Reset the password for a user
+      operationId: resetPassword
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+                  description: The new password to set
+                token:
+                  type:
+                  - string
+                  description: The token to reset the password
+              required:
+              - newPassword
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/verify-email":
+    get:
+      tags:
+      - Default
+      description: Verify the email of the user
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: token
+        in: query
+        description: The token to verify the email
+        required: true
+        schema:
+          type: string
+      - name: callbackURL
+        in: query
+        description: The URL to redirect to after email verification
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    "$ref": "#/components/schemas/User"
+                  status:
+                    type: boolean
+                    description: Indicates if the email was verified successfully
+                required:
+                - user
+                - status
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/send-verification-email":
+    post:
+      tags:
+      - Default
+      description: Send a verification email to the user
+      operationId: sendVerificationEmail
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: The email to send the verification email to
+                  example: user@example.com
+                callbackURL:
+                  type: string
+                  description: The URL to use for email verification callback
+                  example: https://example.com/callback
+                  nullable: true
+              required:
+              - email
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    description: Indicates if the email was sent successfully
+                    example: true
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message
+                    example: Verification email isn't enabled
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/change-email":
+    post:
+      tags:
+      - Default
+      operationId: changeEmail
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newEmail:
+                  type: string
+                  description: The new email address to set must be a valid email
+                    address
+                callbackURL:
+                  type:
+                  - string
+                  description: The URL to redirect to after email verification
+              required:
+              - newEmail
+      responses:
+        '200':
+          description: Email change request processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    "$ref": "#/components/schemas/User"
+                  status:
+                    type: boolean
+                    description: Indicates if the request was successful
+                  message:
+                    type: string
+                    description: Status message of the email change process
+                    nullable: true
+                required:
+                - status
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '422':
+          description: Unprocessable Entity. Email already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/change-password":
+    post:
+      tags:
+      - Default
+      description: Change the password of the user
+      operationId: changePassword
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+                  description: The new password to set
+                currentPassword:
+                  type: string
+                  description: The current password is required
+                revokeOtherSessions:
+                  type:
+                  - boolean
+                  description: Must be a boolean value
+              required:
+              - newPassword
+              - currentPassword
+      responses:
+        '200':
+          description: Password successfully changed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    nullable: true
+                    description: New session token if other sessions were revoked
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: The unique identifier of the user
+                      email:
+                        type: string
+                        format: email
+                        description: The email address of the user
+                      name:
+                        type: string
+                        description: The name of the user
+                      image:
+                        type: string
+                        format: uri
+                        nullable: true
+                        description: The profile image URL of the user
+                      emailVerified:
+                        type: boolean
+                        description: Whether the email has been verified
+                      createdAt:
+                        type: string
+                        format: date-time
+                        description: When the user was created
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        description: When the user was last updated
+                    required:
+                    - id
+                    - email
+                    - name
+                    - emailVerified
+                    - createdAt
+                    - updatedAt
+                required:
+                - user
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/update-user":
+    post:
+      tags:
+      - Default
+      description: Update the current user
+      operationId: updateUser
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The name of the user
+                image:
+                  type: string
+                  description: The image of the user
+                  nullable: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    "$ref": "#/components/schemas/User"
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/delete-user":
+    post:
+      tags:
+      - Default
+      description: Delete the user
+      operationId: deleteUser
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callbackURL:
+                  type: string
+                  description: The callback URL to redirect to after the user is deleted
+                password:
+                  type: string
+                  description: The user's password. Required if session is not fresh
+                token:
+                  type: string
+                  description: The deletion verification token
+      responses:
+        '200':
+          description: User deletion processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indicates if the operation was successful
+                  message:
+                    type: string
+                    description: Status message of the deletion process
+                required:
+                - success
+                - message
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/request-password-reset":
+    post:
+      tags:
+      - Default
+      description: Send a password reset email to the user
+      operationId: requestPasswordReset
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: The email address of the user to send a password reset
+                    email to
+                redirectTo:
+                  type:
+                  - string
+                  description: The URL to redirect the user to reset their password.
+                    If the token isn't valid or expired, it'll be redirected with
+                    a query parameter `?error=INVALID_TOKEN`. If the token is valid,
+                    it'll be redirected with a query parameter `?token=VALID_TOKEN
+              required:
+              - email
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/reset-password/{token}":
+    get:
+      tags:
+      - Default
+      description: Redirects the user to the callback URL with the token
+      operationId: resetPasswordCallback
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: token
+        in: path
+        required: true
+        description: The token to reset the password
+        schema:
+          type: string
+      - name: callbackURL
+        in: query
+        required: true
+        description: The URL to redirect the user to reset their password
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/list-sessions":
+    get:
+      tags:
+      - Default
+      description: List all active sessions for the user
+      operationId: listUserSessions
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Session"
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/revoke-session":
+    post:
+      tags:
+      - Default
+      description: Revoke a single session
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: The token to revoke
+              required:
+              - token
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    description: Indicates if the session was revoked successfully
+                required:
+                - status
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/revoke-sessions":
+    post:
+      tags:
+      - Default
+      description: Revoke all sessions for the user
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    description: Indicates if all sessions were revoked successfully
+                required:
+                - status
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/revoke-other-sessions":
+    post:
+      tags:
+      - Default
+      description: Revoke all other sessions for the user except the current one
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    description: Indicates if all other sessions were revoked successfully
+                required:
+                - status
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/link-social":
+    post:
+      tags:
+      - Default
+      description: Link a social account to the user
+      operationId: linkSocialAccount
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callbackURL:
+                  type:
+                  - string
+                  description: The URL to redirect to after the user has signed in
+                provider:
+                  type: string
+                idToken:
+                  type:
+                  - object
+                  properties:
+                    token:
+                      type: string
+                    nonce:
+                      type:
+                      - string
+                    accessToken:
+                      type:
+                      - string
+                    refreshToken:
+                      type:
+                      - string
+                    scopes:
+                      type:
+                      - array
+                  required:
+                  - token
+                requestSignUp:
+                  type:
+                  - boolean
+                scopes:
+                  type:
+                  - array
+                  description: Additional scopes to request from the provider
+                errorCallbackURL:
+                  type:
+                  - string
+                  description: The URL to redirect to if there is an error during
+                    the link process
+                disableRedirect:
+                  type:
+                  - boolean
+                  description: Disable automatic redirection to the provider. Useful
+                    for handling the redirection yourself
+                additionalData:
+                  type:
+                  - string
+              required:
+              - provider
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    description: The authorization URL to redirect the user to
+                  redirect:
+                    type: boolean
+                    description: Indicates if the user should be redirected to the
+                      authorization URL
+                  status:
+                    type: boolean
+                required:
+                - redirect
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/list-accounts":
+    get:
+      tags:
+      - Default
+      description: List all accounts linked to the user
+      operationId: listUserAccounts
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    providerId:
+                      type: string
+                    createdAt:
+                      type: string
+                      format: date-time
+                    updatedAt:
+                      type: string
+                      format: date-time
+                    accountId:
+                      type: string
+                    userId:
+                      type: string
+                    scopes:
+                      type: array
+                      items:
+                        type: string
+                  required:
+                  - id
+                  - providerId
+                  - createdAt
+                  - updatedAt
+                  - accountId
+                  - userId
+                  - scopes
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/delete-user/callback":
+    get:
+      tags:
+      - Default
+      description: Callback to complete user deletion with verification token
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: token
+        in: query
+        schema:
+          type: string
+          description: The token to verify the deletion request
+      - name: callbackURL
+        in: query
+        schema:
+          type:
+          - string
+          description: The URL to redirect to after deletion
+      responses:
+        '200':
+          description: User successfully deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indicates if the deletion was successful
+                  message:
+                    type: string
+                    description: Confirmation message
+                required:
+                - success
+                - message
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/unlink-account":
+    post:
+      tags:
+      - Default
+      description: Unlink an account
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                providerId:
+                  type: string
+                accountId:
+                  type:
+                  - string
+              required:
+              - providerId
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/refresh-token":
+    post:
+      tags:
+      - Default
+      description: Refresh the access token using a refresh token
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                providerId:
+                  type: string
+                  description: The provider ID for the OAuth provider
+                accountId:
+                  type:
+                  - string
+                  description: The account ID associated with the refresh token
+                userId:
+                  type:
+                  - string
+                  description: The user ID associated with the account
+              required:
+              - providerId
+      responses:
+        '200':
+          description: Access token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokenType:
+                    type: string
+                  idToken:
+                    type: string
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+                  accessTokenExpiresAt:
+                    type: string
+                    format: date-time
+                  refreshTokenExpiresAt:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid refresh token or provider configuration
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/get-access-token":
+    post:
+      tags:
+      - Default
+      description: Get a valid access token, doing a refresh if needed
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                providerId:
+                  type: string
+                  description: The provider ID for the OAuth provider
+                accountId:
+                  type:
+                  - string
+                  description: The account ID associated with the refresh token
+                userId:
+                  type:
+                  - string
+                  description: The user ID associated with the account
+              required:
+              - providerId
+      responses:
+        '200':
+          description: A Valid access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokenType:
+                    type: string
+                  idToken:
+                    type: string
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+                  accessTokenExpiresAt:
+                    type: string
+                    format: date-time
+                  refreshTokenExpiresAt:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid refresh token or provider configuration
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/account-info":
+    get:
+      tags:
+      - Default
+      description: Get the account info provided by the provider
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      email:
+                        type: string
+                      image:
+                        type: string
+                      emailVerified:
+                        type: boolean
+                    required:
+                    - id
+                    - emailVerified
+                  data:
+                    type: object
+                    properties: {}
+                    additionalProperties: true
+                required:
+                - user
+                - data
+                additionalProperties: false
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/ok":
+    get:
+      tags:
+      - Default
+      description: Check if the API is working
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: API is working
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    description: Indicates if the API is working
+                required:
+                - ok
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/error":
+    get:
+      tags:
+      - Default
+      description: Displays an error page
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            text/html:
+              schema:
+                type: string
+                description: The HTML content of the error page
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/create":
+    post:
+      tags:
+      - Organization
+      description: Create an organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The name of the organization
+                slug:
+                  type: string
+                  description: The slug of the organization
+                userId:
+                  type:
+                  - string
+                  description: 'The user id of the organization creator. If not provided,
+                    the current user will be used. Should only be used by admins or
+                    when called by the server. server-only. Eg: "user-id"'
+                logo:
+                  type:
+                  - string
+                  description: The logo of the organization
+                metadata:
+                  type:
+                  - string
+                  description: The metadata of the organization
+                keepCurrentActiveOrganization:
+                  type:
+                  - boolean
+                  description: 'Whether to keep the current active organization active
+                    after creating a new one. Eg: true'
+              required:
+              - name
+              - slug
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: The organization that was created
+                "$ref": "#/components/schemas/Organization"
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/update":
+    post:
+      tags:
+      - Organization
+      description: Update an organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    name:
+                      type:
+                      - string
+                      description: The name of the organization
+                    slug:
+                      type:
+                      - string
+                      description: The slug of the organization
+                    logo:
+                      type:
+                      - string
+                      description: The logo of the organization
+                    metadata:
+                      type:
+                      - string
+                      description: The metadata of the organization
+                organizationId:
+                  type:
+                  - string
+                  description: 'The organization ID. Eg: "org-id"'
+              required:
+              - data
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: The updated organization
+                "$ref": "#/components/schemas/Organization"
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/delete":
+    post:
+      tags:
+      - Organization
+      description: Delete an organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                organizationId:
+                  type: string
+                  description: The organization id to delete
+              required:
+              - organizationId
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: string
+                description: The organization id that was deleted
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/set-active":
+    post:
+      tags:
+      - Organization
+      description: Set the active organization
+      operationId: setActiveOrganization
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                organizationId:
+                  type:
+                  - string
+                organizationSlug:
+                  type:
+                  - string
+                  description: 'The organization slug to set as active. It can be
+                    null to unset the active organization if organizationId is not
+                    provided. Eg: "org-slug"'
+              required: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: The organization
+                "$ref": "#/components/schemas/Organization"
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/get-full-organization":
+    get:
+      tags:
+      - Organization
+      description: Get the full organization
+      operationId: getOrganization
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: The organization
+                "$ref": "#/components/schemas/Organization"
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/list":
+    get:
+      tags:
+      - Organization
+      description: List all organizations
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Organization"
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/invite-member":
+    post:
+      tags:
+      - Organization
+      description: Create an invitation to an organization
+      operationId: createOrganizationInvitation
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: The email address of the user to invite
+                role:
+                  type: string
+                  description: 'The role(s) to assign to the user. It can be `admin`,
+                    `member`, owner. Eg: "member"'
+                organizationId:
+                  type:
+                  - string
+                  description: The organization ID to invite the user to
+                resend:
+                  type:
+                  - boolean
+                  description: 'Resend the invitation email, if the user is already
+                    invited. Eg: true'
+                teamId:
+                  type: string
+              required:
+              - email
+              - role
+              - teamId
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  email:
+                    type: string
+                  role:
+                    type: string
+                  organizationId:
+                    type: string
+                  inviterId:
+                    type: string
+                  status:
+                    type: string
+                  expiresAt:
+                    type: string
+                  createdAt:
+                    type: string
+                required:
+                - id
+                - email
+                - role
+                - organizationId
+                - inviterId
+                - status
+                - expiresAt
+                - createdAt
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/cancel-invitation":
+    post:
+      tags:
+      - Organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invitationId:
+                  type: string
+                  description: The ID of the invitation to cancel
+              required:
+              - invitationId
+      responses:
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/accept-invitation":
+    post:
+      tags:
+      - Organization
+      description: Accept an invitation to an organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invitationId:
+                  type: string
+                  description: The ID of the invitation to accept
+              required:
+              - invitationId
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invitation:
+                    type: object
+                  member:
+                    type: object
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/get-invitation":
+    get:
+      tags:
+      - Organization
+      description: Get an invitation by ID
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: id
+        in: query
+        schema:
+          type: string
+          description: The ID of the invitation to get
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  email:
+                    type: string
+                  role:
+                    type: string
+                  organizationId:
+                    type: string
+                  inviterId:
+                    type: string
+                  status:
+                    type: string
+                  expiresAt:
+                    type: string
+                  organizationName:
+                    type: string
+                  organizationSlug:
+                    type: string
+                  inviterEmail:
+                    type: string
+                required:
+                - id
+                - email
+                - role
+                - organizationId
+                - inviterId
+                - status
+                - expiresAt
+                - organizationName
+                - organizationSlug
+                - inviterEmail
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/reject-invitation":
+    post:
+      tags:
+      - Organization
+      description: Reject an invitation to an organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invitationId:
+                  type: string
+                  description: The ID of the invitation to reject
+              required:
+              - invitationId
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invitation:
+                    type: object
+                  member:
+                    type: object
+                    nullable: true
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/list-invitations":
+    get:
+      tags:
+      - Organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/get-active-member":
+    get:
+      tags:
+      - Organization
+      description: Get the member details of the active organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  userId:
+                    type: string
+                  organizationId:
+                    type: string
+                  role:
+                    type: string
+                required:
+                - id
+                - userId
+                - organizationId
+                - role
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/check-slug":
+    post:
+      tags:
+      - Organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                slug:
+                  type: string
+                  description: 'The organization slug to check. Eg: "my-org"'
+              required:
+              - slug
+      responses:
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/remove-member":
+    post:
+      tags:
+      - Organization
+      description: Remove a member from an organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                memberIdOrEmail:
+                  type: string
+                  description: The ID or email of the member to remove
+                organizationId:
+                  type:
+                  - string
+                  description: 'The ID of the organization to remove the member from.
+                    If not provided, the active organization will be used. Eg: "org-id"'
+              required:
+              - memberIdOrEmail
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      userId:
+                        type: string
+                      organizationId:
+                        type: string
+                      role:
+                        type: string
+                    required:
+                    - id
+                    - userId
+                    - organizationId
+                    - role
+                required:
+                - member
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/update-member-role":
+    post:
+      tags:
+      - Organization
+      description: Update the role of a member in an organization
+      operationId: updateOrganizationMemberRole
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  description: 'The new role to be applied. This can be a string or
+                    array of strings representing the roles. Eg: ["admin", "sale"]'
+                memberId:
+                  type: string
+                  description: 'The member id to apply the role update to. Eg: "member-id"'
+                organizationId:
+                  type:
+                  - string
+                  description: 'An optional organization ID which the member is a
+                    part of to apply the role update. If not provided, you must provide
+                    session headers to get the active organization. Eg: "organization-id"'
+              required:
+              - role
+              - memberId
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  member:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      userId:
+                        type: string
+                      organizationId:
+                        type: string
+                      role:
+                        type: string
+                    required:
+                    - id
+                    - userId
+                    - organizationId
+                    - role
+                required:
+                - member
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/leave":
+    post:
+      tags:
+      - Organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                organizationId:
+                  type: string
+                  description: 'The organization Id for the member to leave. Eg: "organization-id"'
+              required:
+              - organizationId
+      responses:
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/list-user-invitations":
+    get:
+      tags:
+      - Organization
+      description: List all invitations a user has received
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    email:
+                      type: string
+                    role:
+                      type: string
+                    organizationId:
+                      type: string
+                    organizationName:
+                      type: string
+                    inviterId:
+                      type: string
+                      description: The ID of the user who created the invitation
+                    teamId:
+                      type: string
+                      description: The ID of the team associated with the invitation
+                      nullable: true
+                    status:
+                      type: string
+                    expiresAt:
+                      type: string
+                    createdAt:
+                      type: string
+                  required:
+                  - id
+                  - email
+                  - role
+                  - organizationId
+                  - organizationName
+                  - inviterId
+                  - status
+                  - expiresAt
+                  - createdAt
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/list-members":
+    get:
+      tags:
+      - Organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/get-active-member-role":
+    get:
+      tags:
+      - Organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/create-team":
+    post:
+      tags:
+      - Organization
+      description: Create a new team within an organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'The name of the team. Eg: "my-team"'
+                organizationId:
+                  type:
+                  - string
+                  description: 'The organization ID which the team will be created
+                    in. Defaults to the active organization. Eg: "organization-id"'
+              required:
+              - name
+      responses:
+        '200':
+          description: Team created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Unique identifier of the created team
+                  name:
+                    type: string
+                    description: Name of the team
+                  organizationId:
+                    type: string
+                    description: ID of the organization the team belongs to
+                  createdAt:
+                    type: string
+                    format: date-time
+                    description: Timestamp when the team was created
+                  updatedAt:
+                    type: string
+                    format: date-time
+                    description: Timestamp when the team was last updated
+                required:
+                - id
+                - name
+                - organizationId
+                - createdAt
+                - updatedAt
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/list-teams":
+    get:
+      tags:
+      - Organization
+      description: List all teams in an organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Teams retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: Unique identifier of the team
+                    name:
+                      type: string
+                      description: Name of the team
+                    organizationId:
+                      type: string
+                      description: ID of the organization the team belongs to
+                    createdAt:
+                      type: string
+                      format: date-time
+                      description: Timestamp when the team was created
+                    updatedAt:
+                      type: string
+                      format: date-time
+                      description: Timestamp when the team was last updated
+                  required:
+                  - id
+                  - name
+                  - organizationId
+                  - createdAt
+                  - updatedAt
+                description: Array of team objects within the organization
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/remove-team":
+    post:
+      tags:
+      - Organization
+      description: Remove a team from an organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                teamId:
+                  type: string
+                  description: 'The team ID of the team to remove. Eg: "team-id"'
+                organizationId:
+                  type:
+                  - string
+                  description: 'The organization ID which the team falls under. If
+                    not provided, it will default to the user''s active organization.
+                    Eg: "organization-id"'
+              required:
+              - teamId
+      responses:
+        '200':
+          description: Team removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Confirmation message indicating successful removal
+                required:
+                - message
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/update-team":
+    post:
+      tags:
+      - Organization
+      description: Update an existing team in an organization
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                teamId:
+                  type: string
+                  description: 'The ID of the team to be updated. Eg: "team-id"'
+                data:
+                  type: object
+                  properties:
+                    id:
+                      type:
+                      - string
+                    name:
+                      type:
+                      - string
+                    organizationId:
+                      type:
+                      - string
+                    createdAt:
+                      type:
+                      - string
+                    updatedAt:
+                      type:
+                      - string
+              required:
+              - teamId
+              - data
+      responses:
+        '200':
+          description: Team updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Unique identifier of the updated team
+                  name:
+                    type: string
+                    description: Updated name of the team
+                  organizationId:
+                    type: string
+                    description: ID of the organization the team belongs to
+                  createdAt:
+                    type: string
+                    format: date-time
+                    description: Timestamp when the team was created
+                  updatedAt:
+                    type: string
+                    format: date-time
+                    description: Timestamp when the team was last updated
+                required:
+                - id
+                - name
+                - organizationId
+                - createdAt
+                - updatedAt
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/set-active-team":
+    post:
+      tags:
+      - Organization
+      description: Set the active team
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                teamId:
+                  type:
+                  - string
+              required: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                description: The team
+                "$ref": "#/components/schemas/Team"
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/list-user-teams":
+    get:
+      tags:
+      - Organization
+      description: List all teams that the current user is a part of.
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Teams retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  description: The team
+                  "$ref": "#/components/schemas/Team"
+                description: Array of team objects within the organization
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/list-team-members":
+    get:
+      tags:
+      - Organization
+      description: List the members of the given team.
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Teams retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  description: The team member
+                  properties:
+                    id:
+                      type: string
+                      description: Unique identifier of the team member
+                    userId:
+                      type: string
+                      description: The user ID of the team member
+                    teamId:
+                      type: string
+                      description: The team ID of the team the team member is in
+                    createdAt:
+                      type: string
+                      format: date-time
+                      description: Timestamp when the team member was created
+                  required:
+                  - id
+                  - userId
+                  - teamId
+                  - createdAt
+                description: Array of team member objects within the team
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/add-team-member":
+    post:
+      tags:
+      - Organization
+      description: The newly created member
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                teamId:
+                  type: string
+                  description: The team the user should be a member of.
+                userId:
+                  type: string
+                  description: The user Id which represents the user to be added as
+                    a member.
+              required:
+              - teamId
+              - userId
+      responses:
+        '200':
+          description: Team member created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: The team member
+                properties:
+                  id:
+                    type: string
+                    description: Unique identifier of the team member
+                  userId:
+                    type: string
+                    description: The user ID of the team member
+                  teamId:
+                    type: string
+                    description: The team ID of the team the team member is in
+                  createdAt:
+                    type: string
+                    format: date-time
+                    description: Timestamp when the team member was created
+                required:
+                - id
+                - userId
+                - teamId
+                - createdAt
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/remove-team-member":
+    post:
+      tags:
+      - Organization
+      description: Remove a member from a team
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                teamId:
+                  type: string
+                  description: The team the user should be removed from.
+                userId:
+                  type: string
+                  description: The user which should be removed from the team.
+              required:
+              - teamId
+              - userId
+      responses:
+        '200':
+          description: Team member removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Confirmation message indicating successful removal
+                required:
+                - message
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.
+  "/organization/has-permission":
+    post:
+      tags:
+      - Organization
+      description: Check if the user has permission
+      security:
+      - bearerAuth: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                permission:
+                  type: object
+                  description: The permission to check
+                  deprecated: true
+                permissions:
+                  type: object
+                  description: The permission to check
+              required:
+              - permissions
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  success:
+                    type: boolean
+                required:
+                - success
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Bad Request. Usually due to missing parameters, or invalid
+            parameters.
+        '401':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+          description: Unauthorized. Due to missing or invalid authentication.
+        '403':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Forbidden. You do not have permission to access this resource
+            or to perform this action.
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Not Found. The requested resource was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Too Many Requests. You have exceeded the rate limit. Try again
+            later.
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: Internal Server Error. This is a problem with the server that
+            you cannot fix.

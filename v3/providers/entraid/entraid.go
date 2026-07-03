@@ -7,8 +7,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/zeiss/fiber-goth/adapters"
-	"github.com/zeiss/fiber-goth/providers"
+	"github.com/zeiss/fiber-goth/v3/adapters"
+	"github.com/zeiss/fiber-goth/v3/providers"
 
 	"github.com/zeiss/pkg/cast"
 	"github.com/zeiss/pkg/conv"
@@ -48,6 +48,11 @@ func (a *authIntent) GetAuthURL() (string, error) {
 	}
 
 	return a.authURL, nil
+}
+
+// CodeVerifier returns the code verifier for PKCE, if applicable.
+func (a *authIntent) CodeVerifier() string {
+	return ""
 }
 
 // New creates a new GitHub provider.
