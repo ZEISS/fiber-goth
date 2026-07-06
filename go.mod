@@ -18,7 +18,7 @@ require (
 	github.com/gofiber/fiber/v3 v3.4.0
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
-	github.com/oapi-codegen/runtime v1.4.0
+	github.com/oapi-codegen/runtime v1.4.2
 	github.com/spf13/cobra v1.10.2
 	github.com/valyala/fasthttp v1.72.0
 	github.com/zeiss/fiber-goth/v3 v3.0.0-20260703141842-a0fa760b4373
