@@ -4,7 +4,7 @@ go 1.26.3
 
 require (
 	github.com/coreos/go-oidc/v3 v3.19.0
-	github.com/gofiber/fiber/v2 v2.52.13
+	github.com/gofiber/fiber/v2 v2.52.14
 	github.com/gofiber/fiber/v3 v3.4.0
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
