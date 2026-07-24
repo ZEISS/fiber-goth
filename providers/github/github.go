@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/zeiss/fiber-goth/adapters"
 	"github.com/zeiss/fiber-goth/providers"
 
@@ -188,6 +189,7 @@ func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adap
 		Image: cast.Ptr(gu.GetAvatarURL()),
 		Accounts: []adapters.GothAccount{
 			{
+				ID:                uuid.New(),
 				Type:              adapters.AccountTypeOAuth2,
 				Provider:          g.ID(),
 				ProviderAccountID: cast.Ptr(strconv.Itoa(u.ID)),

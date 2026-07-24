@@ -11,6 +11,7 @@ import (
 	"github.com/zeiss/fiber-goth/v3/adapters"
 	"github.com/zeiss/fiber-goth/v3/providers"
 
+	"github.com/google/uuid"
 	"github.com/zeiss/pkg/cast"
 	"github.com/zeiss/pkg/utilx"
 	"golang.org/x/oauth2"
@@ -175,6 +176,7 @@ func (g *dexProvider) CompleteAuth(ctx context.Context, adapter adapters.Adapter
 		Email: claims.Email,
 		Accounts: []adapters.GothAccount{
 			{
+				ID:           uuid.New(),
 				Type:         adapters.AccountTypeOAuth2,
 				Provider:     g.ID(),
 				AccessToken:  cast.Ptr(token.AccessToken),

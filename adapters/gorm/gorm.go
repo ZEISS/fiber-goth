@@ -36,7 +36,7 @@ func New(db *gorm.DB) adapters.Adapter {
 
 // CreateUser is a helper function to create a new user.
 func (a *gormAdapter) CreateUser(ctx context.Context, user adapters.GothUser) (adapters.GothUser, error) {
-	err := a.db.WithContext(ctx).Where(adapters.GothUser{Email: user.Email}).FirstOrCreate(&user).Error
+	err := a.db.WithContext(ctx).Where(adapters.GothUser{ID: uuid.New(), Email: user.Email}).FirstOrCreate(&user).Error
 	if err != nil {
 		return adapters.GothUser{}, goth.ErrMissingUser
 	}
@@ -71,10 +71,12 @@ const defaultExpiry = 24 * time.Hour
 // CreateSession is a helper function to create a new session.
 func (a *gormAdapter) CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (adapters.GothSession, error) {
 	session := adapters.GothSession{
+		ID:           uuid.New(),
 		UserID:       userID,
 		SessionToken: uuid.NewString(),
 		ExpiresAt:    expires,
 		CsrfToken: adapters.GothCsrfToken{
+			ID:        uuid.New(),
 			Token:     uuid.NewString(),              // creates a token that is used to prevent CSRF attacks
 			ExpiresAt: time.Now().Add(defaultExpiry), // expires in 24 hours
 		},
