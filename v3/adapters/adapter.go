@@ -2,21 +2,12 @@ package adapters
 
 import (
 	"context"
-	"encoding/gob"
 	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
-
-func init() {
-	gob.Register(&GothAccount{})
-	gob.Register(&GothUser{})
-	gob.Register(&GothSession{})
-	gob.Register(&GothVerificationToken{})
-	gob.Register(&GothCsrfToken{})
-}
 
 // AccountType represents the type of an account.
 type AccountType string
