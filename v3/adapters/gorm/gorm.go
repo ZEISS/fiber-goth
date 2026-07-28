@@ -56,7 +56,7 @@ func (a *gormAdapter) GetSession(ctx context.Context, sessionToken string) (adap
 }
 
 // GetUser is a helper function to retrieve a user by ID.
-func (a *gormAdapter) GetUser(ctx context.Context, id uuid.UUID) (adapters.GothUser, error) {
+func (a *gormAdapter) GetUser(ctx context.Context, id string) (adapters.GothUser, error) {
 	var user adapters.GothUser
 	err := a.db.WithContext(ctx).Preload(clause.Associations).Where("id = ?", id).First(&user).Error
 	if err != nil {
@@ -69,7 +69,7 @@ func (a *gormAdapter) GetUser(ctx context.Context, id uuid.UUID) (adapters.GothU
 const defaultExpiry = 24 * time.Hour
 
 // CreateSession is a helper function to create a new session.
-func (a *gormAdapter) CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (adapters.GothSession, error) {
+func (a *gormAdapter) CreateSession(ctx context.Context, userID string, expires time.Time) (adapters.GothSession, error) {
 	session := adapters.GothSession{
 		UserID:       userID,
 		SessionToken: uuid.NewString(),
@@ -109,7 +109,7 @@ func (a *gormAdapter) RefreshSession(ctx context.Context, session adapters.GothS
 }
 
 // DeleteUser is a helper function to delete a user by ID.
-func (a *gormAdapter) DeleteUser(ctx context.Context, id uuid.UUID) error {
+func (a *gormAdapter) DeleteUser(ctx context.Context, id string) error {
 	err := a.db.WithContext(ctx).Where("id = ?", id).Delete(&adapters.GothUser{}).Error
 	if err != nil {
 		return goth.ErrBadRequest
@@ -119,7 +119,7 @@ func (a *gormAdapter) DeleteUser(ctx context.Context, id uuid.UUID) error {
 }
 
 // LinkAccount is a helper function to link an account to a user.
-func (a *gormAdapter) LinkAccount(ctx context.Context, accountID, userID uuid.UUID) error {
+func (a *gormAdapter) LinkAccount(ctx context.Context, accountID, userID string) error {
 	err := a.db.WithContext(ctx).Model(&adapters.GothAccount{}).Where("id = ?", accountID).Update("user_id", userID).Error
 	if err != nil {
 		return goth.ErrBadRequest

@@ -31,7 +31,7 @@ const (
 // GothAccount represents an account in a third-party identity provider.
 type GothAccount struct {
 	// ID is the unique identifier of the account.
-	ID uuid.UUID `json:"id" gorm:"primaryKey;type:uuid;column:id;default:gen_random_uuid();"`
+	ID string `json:"id" gorm:"primaryKey"`
 	// Type is the type of the account.
 	Type AccountType `json:"type" validate:"required"`
 	// Provider is the provider of the account.
@@ -67,7 +67,7 @@ type GothAccount struct {
 // GothUser is a user of the application.
 type GothUser struct {
 	// ID is the unique identifier of the user.
-	ID uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
+	ID string `json:"id" gorm:"primaryKey"`
 	// Name is the name of the user.
 	Name string `json:"name" validate:"required,max=255"`
 	// Email is the email of the user.
@@ -91,15 +91,15 @@ type GothUser struct {
 // GothSession is a session for a user.
 type GothSession struct {
 	// ID is the unique identifier of the session.
-	ID uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
+	ID string `json:"id" gorm:"primaryKey"`
 	// SessionToken is the token of the session.
 	SessionToken string `json:"session_token"`
 	// CsrfToken is the CSRF token of the session.
 	CsrfToken GothCsrfToken `json:"csrf_token"`
 	// CsrfTokenID is the CSRF token ID of the session.
-	CsrfTokenID uuid.UUID `json:"csrf_token_id"`
+	CsrfTokenID string `json:"csrf_token_id"`
 	// UserID is the user ID of the session.
-	UserID uuid.UUID `json:"user_id"`
+	UserID string `json:"user_id"`
 	// User is the user of the session.
 	User GothUser `json:"user"`
 	// ExpiresAt is the expiry time of the session.
@@ -120,7 +120,7 @@ func (s *GothSession) GetUser() GothUser {
 // GothCsrfToken is a CSRF token for a user.
 type GothCsrfToken struct {
 	// ID is the unique identifier of the CSRF token.
-	ID uuid.UUID `json:"id" gorm:"primaryKey;unique;type:uuid;column:id;default:gen_random_uuid()"`
+	ID string `json:"id" gorm:"primaryKey"`
 	// Token is the unique identifier of the token.
 	Token string `json:"token"`
 	// ExpiresAt is the expiry time of the token.
@@ -174,19 +174,19 @@ type Adapter interface {
 	// CreateUser creates a new user.
 	CreateUser(ctx context.Context, user GothUser) (GothUser, error)
 	// GetUser retrieves a user by ID.
-	GetUser(ctx context.Context, id uuid.UUID) (GothUser, error)
+	GetUser(ctx context.Context, id string) (GothUser, error)
 	// GetUserByEmail retrieves a user by email.
 	GetUserByEmail(ctx context.Context, email string) (GothUser, error)
 	// UpdateUser updates a user.
 	UpdateUser(ctx context.Context, user GothUser) (GothUser, error)
 	// DeleteUser deletes a user by ID.
-	DeleteUser(ctx context.Context, id uuid.UUID) error
+	DeleteUser(ctx context.Context, id string) error
 	// LinkAccount links an account to a user.
-	LinkAccount(ctx context.Context, accountID, userID uuid.UUID) error
+	LinkAccount(ctx context.Context, accountID, userID string) error
 	// UnlinkAccount unlinks an account from a user.
-	UnlinkAccount(ctx context.Context, accountID, userID uuid.UUID) error
+	UnlinkAccount(ctx context.Context, accountID, userID string) error
 	// CreateSession creates a new session.
-	CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (GothSession, error)
+	CreateSession(ctx context.Context, userID string, expires time.Time) (GothSession, error)
 	// GetSession retrieves a session by session token.
 	GetSession(ctx context.Context, sessionToken string) (GothSession, error)
 	// UpdateSession updates a session.
@@ -212,7 +212,7 @@ func (a *UnimplementedAdapter) CreateUser(_ context.Context, _ GothUser) (GothUs
 }
 
 // GetUser retrieves a user by ID.
-func (a *UnimplementedAdapter) GetUser(_ context.Context, _ uuid.UUID) (GothUser, error) {
+func (a *UnimplementedAdapter) GetUser(_ context.Context, _ string) (GothUser, error) {
 	return GothUser{}, ErrUnimplemented
 }
 
@@ -232,22 +232,22 @@ func (a *UnimplementedAdapter) UpdateUser(_ context.Context, _ GothUser) (GothUs
 }
 
 // DeleteUser deletes a user by ID.
-func (a *UnimplementedAdapter) DeleteUser(_ context.Context, _ uuid.UUID) error {
+func (a *UnimplementedAdapter) DeleteUser(_ context.Context, _ string) error {
 	return ErrUnimplemented
 }
 
 // LinkAccount links an account to a user.
-func (a *UnimplementedAdapter) LinkAccount(_ context.Context, _, _ uuid.UUID) error {
+func (a *UnimplementedAdapter) LinkAccount(_ context.Context, _, _ string) error {
 	return ErrUnimplemented
 }
 
 // UnlinkAccount unlinks an account from a user.
-func (a *UnimplementedAdapter) UnlinkAccount(_ context.Context, _, _ uuid.UUID) error {
+func (a *UnimplementedAdapter) UnlinkAccount(_ context.Context, _, _ string) error {
 	return ErrUnimplemented
 }
 
 // CreateSession creates a new session.
-func (a *UnimplementedAdapter) CreateSession(_ context.Context, _ uuid.UUID, _ time.Time) (GothSession, error) {
+func (a *UnimplementedAdapter) CreateSession(_ context.Context, _ string, _ time.Time) (GothSession, error) {
 	return GothSession{}, ErrUnimplemented
 }
 

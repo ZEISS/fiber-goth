@@ -185,7 +185,7 @@ func (e *entraIDProvider) CompleteAuth(ctx context.Context, adapter adapters.Ada
 		Image: cast.Ptr(GraphAPIURL + fmt.Sprintf("users/%s/photo/$value", u.ID)),
 		Accounts: []adapters.GothAccount{
 			{
-				ID:                uuid.New(),
+				ID:                uuid.New().String(),
 				Type:              adapters.AccountTypeOAuth2,
 				Provider:          e.ID(),
 				ProviderAccountID: cast.Ptr(u.ID),
