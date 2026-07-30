@@ -60,11 +60,10 @@ func WithScopes(scopes ...string) Opt {
 }
 
 // New creates a new GitHub provider.
-func New(url, clientID, clientSecret, issuer, callbackURL string, opts ...Opt) providers.Provider {
+func New(clientID, clientSecret, issuer, callbackURL string, opts ...Opt) providers.Provider {
 	p := &dexProvider{
 		id:           "dex",
 		name:         "Dex",
-		url:          url,
 		issuer:       issuer,
 		clientID:     clientID,
 		clientSecret: clientSecret,
