@@ -172,11 +172,12 @@ func (g *dexProvider) CompleteAuth(ctx context.Context, adapter adapters.Adapter
 	}
 
 	user := adapters.GothUser{
+		ID:    uuid.NewString(),
 		Name:  claims.Name,
 		Email: claims.Email,
 		Accounts: []adapters.GothAccount{
 			{
-				ID:           uuid.New().String(),
+				ID:           uuid.NewString(),
 				Type:         adapters.AccountTypeOAuth2,
 				Provider:     g.ID(),
 				AccessToken:  cast.Ptr(token.AccessToken),

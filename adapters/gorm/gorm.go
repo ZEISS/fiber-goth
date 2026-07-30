@@ -36,7 +36,7 @@ func New(db *gorm.DB) adapters.Adapter {
 
 // CreateUser is a helper function to create a new user.
 func (a *gormAdapter) CreateUser(ctx context.Context, user adapters.GothUser) (adapters.GothUser, error) {
-	err := a.db.WithContext(ctx).Where(adapters.GothUser{ID: uuid.New(), Email: user.Email}).FirstOrCreate(&user).Error
+	err := a.db.WithContext(ctx).Where(adapters.GothUser{Email: user.Email}).FirstOrCreate(&user).Error
 	if err != nil {
 		return adapters.GothUser{}, goth.ErrMissingUser
 	}

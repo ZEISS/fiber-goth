@@ -187,6 +187,7 @@ func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adap
 	}
 
 	user := adapters.GothUser{
+		ID:    uuid.New().String(),
 		Name:  gu.GetName(),
 		Email: gu.GetEmail(),
 		Image: cast.Ptr(gu.GetAvatarURL()),

@@ -71,10 +71,12 @@ const defaultExpiry = 24 * time.Hour
 // CreateSession is a helper function to create a new session.
 func (a *gormAdapter) CreateSession(ctx context.Context, userID string, expires time.Time) (adapters.GothSession, error) {
 	session := adapters.GothSession{
+		ID:           uuid.NewString(),
 		UserID:       userID,
 		SessionToken: uuid.NewString(),
 		ExpiresAt:    expires,
 		CsrfToken: adapters.GothCsrfToken{
+			ID:        uuid.NewString(),
 			Token:     uuid.NewString(),              // creates a token that is used to prevent CSRF attacks
 			ExpiresAt: time.Now().Add(defaultExpiry), // expires in 24 hours
 		},

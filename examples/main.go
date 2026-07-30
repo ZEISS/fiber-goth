@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"sort"
@@ -19,7 +18,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"github.com/spf13/cobra"
 	"github.com/zeiss/pkg/logx"
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -46,11 +45,7 @@ type DB struct {
 var cfg = &Config{
 	Flags: &Flags{
 		DB: &DB{
-			Host:     "localhost",
-			Username: "example",
-			Password: "example",
-			Port:     5432, //nolint:mnd
-			Database: "example",
+			Database: "example.db",
 		},
 	},
 }
@@ -62,12 +57,8 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&cfg.Flags.Addr, "addr", ":8080", "addr")
-	rootCmd.PersistentFlags().StringVar(&cfg.Flags.DB.Host, "db-host", cfg.Flags.DB.Host, "Database host")
-	rootCmd.PersistentFlags().StringVar(&cfg.Flags.DB.Database, "db-database", cfg.Flags.DB.Database, "Database name")
-	rootCmd.PersistentFlags().StringVar(&cfg.Flags.DB.Username, "db-username", cfg.Flags.DB.Username, "Database user")
-	rootCmd.PersistentFlags().StringVar(&cfg.Flags.DB.Password, "db-password", cfg.Flags.DB.Password, "Database password")
-	rootCmd.PersistentFlags().IntVar(&cfg.Flags.DB.Port, "db-port", cfg.Flags.DB.Port, "Database port")
+	rootCmd.PersistentFlags().StringVar(&cfg.Flags.Addr, "addr", ":3000", "addr")
+	rootCmd.PersistentFlags().StringVar(&cfg.Flags.DB.Database, "database", cfg.Flags.DB.Database, "Database name")
 
 	rootCmd.SilenceUsage = true
 }
@@ -81,8 +72,9 @@ func run(_ context.Context) error {
 		return err
 	}
 
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable", cfg.Flags.DB.Host, cfg.Flags.DB.Username, cfg.Flags.DB.Password, cfg.Flags.DB.Database, cfg.Flags.DB.Port)
-	conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	conn, err := gorm.Open(sqlite.Open(cfg.Flags.DB.Database), &gorm.Config{
+		TranslateError: true,
+	})
 	if err != nil {
 		return err
 	}
@@ -129,6 +121,7 @@ func run(_ context.Context) error {
 
 		return c.JSON(session)
 	}, gothConfig))
+
 	app.Get("/session", goth.NewSessionHandler(gothConfig))
 	app.Get("/login/:provider", goth.NewBeginAuthHandler(gothConfig))
 	app.Get("/auth/:provider/callback", goth.NewCompleteAuthHandler(gothConfig))
