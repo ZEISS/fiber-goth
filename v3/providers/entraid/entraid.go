@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/google/uuid"
 	"github.com/zeiss/fiber-goth/v3/adapters"
 	"github.com/zeiss/fiber-goth/v3/providers"
 
@@ -180,13 +179,11 @@ func (e *entraIDProvider) CompleteAuth(ctx context.Context, adapter adapters.Ada
 	}
 
 	user := adapters.GothUser{
-		ID:    uuid.NewString(),
 		Name:  u.DisplayName,
 		Email: u.Email,
 		Image: cast.Ptr(GraphAPIURL + fmt.Sprintf("users/%s/photo/$value", u.ID)),
 		Accounts: []adapters.GothAccount{
 			{
-				ID:                uuid.NewString(),
 				Type:              adapters.AccountTypeOAuth2,
 				Provider:          e.ID(),
 				ProviderAccountID: cast.Ptr(u.ID),

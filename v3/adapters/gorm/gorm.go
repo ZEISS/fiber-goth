@@ -56,9 +56,9 @@ func (a *gormAdapter) GetSession(ctx context.Context, sessionToken string) (adap
 }
 
 // GetUser is a helper function to retrieve a user by ID.
-func (a *gormAdapter) GetUser(ctx context.Context, id string) (adapters.GothUser, error) {
+func (a *gormAdapter) GetUser(ctx context.Context, userId uuid.UUID) (adapters.GothUser, error) {
 	var user adapters.GothUser
-	err := a.db.WithContext(ctx).Preload(clause.Associations).Where("id = ?", id).First(&user).Error
+	err := a.db.WithContext(ctx).Preload(clause.Associations).Where("id = ?", userId).First(&user).Error
 	if err != nil {
 		return adapters.GothUser{}, goth.ErrMissingUser
 	}
@@ -69,14 +69,12 @@ func (a *gormAdapter) GetUser(ctx context.Context, id string) (adapters.GothUser
 const defaultExpiry = 24 * time.Hour
 
 // CreateSession is a helper function to create a new session.
-func (a *gormAdapter) CreateSession(ctx context.Context, userID string, expires time.Time) (adapters.GothSession, error) {
+func (a *gormAdapter) CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (adapters.GothSession, error) {
 	session := adapters.GothSession{
-		ID:           uuid.NewString(),
 		UserID:       userID,
 		SessionToken: uuid.NewString(),
 		ExpiresAt:    expires,
 		CsrfToken: adapters.GothCsrfToken{
-			ID:        uuid.NewString(),
 			Token:     uuid.NewString(),              // creates a token that is used to prevent CSRF attacks
 			ExpiresAt: time.Now().Add(defaultExpiry), // expires in 24 hours
 		},
@@ -111,8 +109,8 @@ func (a *gormAdapter) RefreshSession(ctx context.Context, session adapters.GothS
 }
 
 // DeleteUser is a helper function to delete a user by ID.
-func (a *gormAdapter) DeleteUser(ctx context.Context, id string) error {
-	err := a.db.WithContext(ctx).Where("id = ?", id).Delete(&adapters.GothUser{}).Error
+func (a *gormAdapter) DeleteUser(ctx context.Context, userId uuid.UUID) error {
+	err := a.db.WithContext(ctx).Where("id = ?", userId).Delete(&adapters.GothUser{}).Error
 	if err != nil {
 		return goth.ErrBadRequest
 	}
@@ -121,7 +119,7 @@ func (a *gormAdapter) DeleteUser(ctx context.Context, id string) error {
 }
 
 // LinkAccount is a helper function to link an account to a user.
-func (a *gormAdapter) LinkAccount(ctx context.Context, accountID, userID string) error {
+func (a *gormAdapter) LinkAccount(ctx context.Context, accountID, userID uuid.UUID) error {
 	err := a.db.WithContext(ctx).Model(&adapters.GothAccount{}).Where("id = ?", accountID).Update("user_id", userID).Error
 	if err != nil {
 		return goth.ErrBadRequest
