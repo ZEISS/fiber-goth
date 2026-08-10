@@ -22,7 +22,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/valyala/fasthttp v1.73.0
 	github.com/zeiss/fiber-goth/v3 v3.0.0-20260703141842-a0fa760b4373
-	github.com/zeiss/pkg v0.2.0
+	github.com/zeiss/pkg v0.2.1
 	golang.org/x/crypto v0.54.0
 	golang.org/x/oauth2 v0.36.0
 	gorm.io/driver/sqlite v1.6.0
@@ -531,7 +531,7 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0-rc.4 // indirect
 	gocloud.dev v0.45.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20260209203927-2842357ff358 // indirect
-	golang.org/x/mod v0.37.0 // indirect
+	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
