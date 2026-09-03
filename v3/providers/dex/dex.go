@@ -54,7 +54,7 @@ type Opt func(*dexProvider)
 // WithScopes sets the scopes for the GitHub provider.
 func WithScopes(scopes ...string) Opt {
 	return func(p *dexProvider) {
-		p.config.Scopes = scopes
+		p.scopes = scopes
 	}
 }
 
