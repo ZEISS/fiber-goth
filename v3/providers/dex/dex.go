@@ -203,7 +203,7 @@ func newConfig(d *dexProvider, scopes ...string) *oauth2.Config {
 		ClientSecret: d.clientSecret,
 		RedirectURL:  d.callbackURL,
 		Endpoint:     dexConfig(d.issuer),
-		Scopes:       append(DefaultScopes, scopes...),
+		Scopes:       scopes,
 	}
 
 	return c
