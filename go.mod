@@ -24,7 +24,7 @@ require (
 	github.com/zeiss/fiber-goth/v3 v3.0.0-20260703141842-a0fa760b4373
 	github.com/zeiss/pkg v0.2.4
 	golang.org/x/crypto v0.56.0
-	golang.org/x/oauth2 v0.36.0
+	golang.org/x/oauth2 v0.37.0
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.2
 )
