@@ -20,6 +20,11 @@ import (
 	"github.com/zeiss/fiber-goth/providers"
 )
 
+const (
+	// DefaultExpiry is the default expiry time for the session cookie.
+	DefaultExpiry = "24h"
+)
+
 var _ Handler = (*BeginAuthHandler)(nil)
 
 const charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
@@ -543,7 +548,7 @@ var ConfigDefault = Config{
 	IndexHandler:        defaultIndexHandler,
 	Encryptor:           EncryptCookie,
 	Decryptor:           DecryptCookie,
-	Expiry:              "7h",
+	Expiry:              DefaultExpiry,
 	CookieName:          "fiber_goth.session",
 	Extractor:           TokenFromCookie("fiber_goth.session"),
 	CookieSameSite:      fasthttp.CookieSameSiteLaxMode,
