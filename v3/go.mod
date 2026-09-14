@@ -10,7 +10,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/valyala/fasthttp v1.74.0
 	github.com/zeiss/pkg v0.2.4
-	golang.org/x/crypto v0.56.0
+	golang.org/x/crypto v0.57.0
 	golang.org/x/oauth2 v0.37.0
 	gorm.io/gorm v1.31.2
 )
@@ -31,6 +31,6 @@ require (
 	github.com/tinylib/msgp v1.6.4 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 )
