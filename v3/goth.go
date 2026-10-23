@@ -393,7 +393,12 @@ func Session(config ...Config) fiber.Handler {
 			return c.Next()
 		}
 
-		if !session.IsValid() {
+		if session.NotValid() {
+			err := cfg.Adapter.DeleteSession(c, session.SessionToken)
+			if err != nil {
+				return c.Next()
+			}
+
 			return c.Next()
 		}
 

@@ -163,10 +163,10 @@ func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adap
 
 	code := params.Get("code")
 	if code == "" {
-		return adapters.GothUser{}, adapters.ErrUnimplemented
+		return adapters.GothUser{}, fmt.Errorf("code is empty")
 	}
 
-	token, err := g.config.Exchange(ctx, code, oauth2.SetAuthURLParam("code_verifier", params.CodeVerifier()))
+	token, err := g.config.Exchange(ctx, code, oauth2.VerifierOption(params.CodeVerifier()))
 	if err != nil {
 		return adapters.GothUser{}, err
 	}
@@ -233,11 +233,6 @@ func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adap
 	}
 
 	user, err = adapter.CreateUser(ctx, user)
-	if err != nil {
-		return adapters.GothUser{}, err
-	}
-
-	user, err = adapter.GetUser(ctx, user.ID)
 	if err != nil {
 		return adapters.GothUser{}, err
 	}

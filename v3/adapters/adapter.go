@@ -93,7 +93,7 @@ type GothSession struct {
 	// ID is the unique identifier of the session.
 	ID uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	// SessionToken is the token of the session.
-	SessionToken string `json:"session_token"`
+	SessionToken string `json:"session_token" gorm:"uniqueIndex"`
 	// CsrfToken is the CSRF token of the session.
 	CsrfToken GothCsrfToken `json:"csrf_token"`
 	// CsrfTokenID is the CSRF token ID of the session.
@@ -136,6 +136,11 @@ type GothCsrfToken struct {
 // IsValid returns true if the session is valid.
 func (s *GothSession) IsValid() bool {
 	return s.ExpiresAt.After(time.Now())
+}
+
+// NotValid returns true if the session is not valid.
+func (s *GothSession) NotValid() bool {
+	return !s.IsValid()
 }
 
 // GetCsrfToken returns the CSRF token.
