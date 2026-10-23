@@ -97,8 +97,6 @@ func DefaultErrorHandler(_ fiber.Ctx, _ error) error {
 }
 
 // Helper function to set default values
-//
-//nolint:gocyclo
 func configDefault(config ...Config) Config {
 	if len(config) < 1 {
 		return ConfigDefault
@@ -131,8 +129,6 @@ func configDefault(config ...Config) Config {
 }
 
 // New creates a new csrf middleware.
-//
-//nolint:gocyclo
 func New(config ...Config) fiber.Handler {
 	// Set default config
 	cfg := configDefault(config...)

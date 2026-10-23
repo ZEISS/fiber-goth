@@ -217,8 +217,6 @@ func NewBeginAuthHandler(config ...Config) fiber.Handler {
 type CompleteAuthCompleteHandler struct{}
 
 // New creates a new handler to complete authentication.
-//
-//nolint:gocyclo
 func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		if cfg.Next != nil && cfg.Next(c) {
@@ -312,8 +310,6 @@ func (LogoutHandler) New(cfg Config) fiber.Handler {
 type ProtectMiddleware struct{}
 
 // NewProtectMiddleware returns a new default protect handler.
-//
-//nolint:gocyclo
 func NewProtectMiddleware(config ...Config) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		cfg := configDefault(config...)
@@ -579,9 +575,7 @@ func defaultIndexHandler(c *fiber.Ctx) error {
 	return c.Redirect("/login", fiber.StatusTemporaryRedirect)
 }
 
-// Helper function to set default values
-//
-//nolint:gocyclo
+// Helper function to set default values.
 func configDefault(config ...Config) Config {
 	if len(config) < 1 {
 		return ConfigDefault

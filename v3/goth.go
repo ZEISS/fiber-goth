@@ -31,7 +31,9 @@ type Environment string
 
 // StateCtx holds the state of the authentication process.
 type StateCtx struct {
-	Nounce      string `json:"nounce"`
+	// Nounce is a random string used to prevent replay attacks.
+	Nounce string `json:"nounce"`
+	// RedirectURL is the URL to redirect the user to after authentication.
 	RedirectURL string `json:"redirect_url"`
 }
 
@@ -151,11 +153,14 @@ func (SessionHandler) New(cfg Config) fiber.Handler {
 			return cfg.ErrorHandler(c, err)
 		}
 
-		if !session.IsValid() {
-			err := cfg.ErrorHandler(c, err)
+		if session.NotValid() {
+			err := cfg.Adapter.DeleteSession(c, session.SessionToken)
 			if err != nil {
-				return err
+				return cfg.ErrorHandler(c, err)
 			}
+			InvalidateSession(c, session, cfg)
+
+			return c.Next()
 		}
 
 		duration, err := time.ParseDuration(cfg.Expiry)
@@ -257,8 +262,6 @@ func NewBeginAuthHandler(config ...Config) fiber.Handler {
 type CompleteAuthCompleteHandler struct{}
 
 // New creates a new handler to complete authentication.
-//
-//nolint:gocyclo
 func (CompleteAuthCompleteHandler) New(cfg Config) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		if cfg.Next != nil && cfg.Next(c) {
@@ -394,11 +397,8 @@ func Session(config ...Config) fiber.Handler {
 		}
 
 		if session.NotValid() {
-			err := cfg.Adapter.DeleteSession(c, session.SessionToken)
-			if err != nil {
-				return c.Next()
-			}
-
+			cfg.Adapter.DeleteSession(c, session.SessionToken)
+			InvalidateSession(c, session, cfg)
 			return c.Next()
 		}
 
@@ -639,8 +639,6 @@ func defaultIndexHandler(c fiber.Ctx) error {
 }
 
 // Helper function to set default values
-//
-//nolint:gocyclo
 func configDefault(config ...Config) Config {
 	if len(config) < 1 {
 		return ConfigDefault
@@ -809,4 +807,21 @@ func CodeVerifierFromCookie(c fiber.Ctx, cfg Config) (string, error) {
 	}
 
 	return cookie, nil
+}
+
+// InvalidateSession invalidates the session by clearing the token and code verifier cookies.
+func InvalidateSession(c fiber.Ctx, session adapters.GothSession, cfg Config) {
+	cookieValue := &fiber.Cookie{
+		Name:     cfg.SessionCookieName(),
+		Value:    session.SessionToken,
+		HTTPOnly: true,
+		SameSite: cfg.CookieSameSite,
+		Expires:  time.Now().Add(-1 * time.Minute),
+		Path:     cfg.CookiePath,
+		MaxAge:   -1,
+		Secure:   cfg.CookieSecure,
+		Domain:   cfg.CookieDomain,
+	}
+
+	c.Cookie(cookieValue)
 }

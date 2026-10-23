@@ -131,8 +131,6 @@ func (g *dexProvider) BeginAuth(_ context.Context, _ adapters.Adapter, state str
 }
 
 // CompleteAuth completes the authentication process.
-//
-//nolint:gocyclo
 func (g *dexProvider) CompleteAuth(ctx context.Context, adapter adapters.Adapter, params providers.AuthParams) (adapters.GothUser, error) {
 	code := params.Get("code")
 	if code == "" {

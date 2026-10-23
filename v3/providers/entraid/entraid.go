@@ -17,6 +17,7 @@ import (
 	"golang.org/x/oauth2/endpoints"
 )
 
+// DefaultScopes are the default scopes for EntraID authentication.
 var DefaultScopes = []ScopeType{OpenIDScope, ProfileScope, EmailScope, UserReadScope}
 
 // also https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-protocols#endpoints
@@ -132,8 +133,6 @@ func (e *entraIDProvider) BeginAuth(_ context.Context, _ adapters.Adapter, state
 }
 
 // CompleteAuth completes the authentication process.
-//
-//nolint:gocyclo
 func (e *entraIDProvider) CompleteAuth(ctx context.Context, adapter adapters.Adapter, params providers.AuthParams) (adapters.GothUser, error) {
 	u := struct {
 		ID                string   `json:"id"`                // The unique identifier for the user.

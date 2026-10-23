@@ -128,8 +128,6 @@ func (e *entraIDProvider) BeginAuth(_ context.Context, _ adapters.Adapter, state
 }
 
 // CompleteAuth completes the authentication process.
-//
-//nolint:gocyclo
 func (e *entraIDProvider) CompleteAuth(ctx context.Context, adapter adapters.Adapter, params providers.AuthParams) (adapters.GothUser, error) {
 	u := struct {
 		ID                string   `json:"id"`                // The unique identifier for the user.

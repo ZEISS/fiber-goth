@@ -148,8 +148,6 @@ func (g *githubProvider) BeginAuth(_ context.Context, _ adapters.Adapter, state 
 }
 
 // CompleteAuth completes the authentication process.
-//
-//nolint:gocyclo
 func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adapter, params providers.AuthParams) (adapters.GothUser, error) {
 	u := struct {
 		ID       int    `json:"id"`

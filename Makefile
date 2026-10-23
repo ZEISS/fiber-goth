@@ -52,6 +52,8 @@ fix: ## Run lint auto-fixes.
 clean: ## Remove previous build.
 	@rm -rf .test .dist
 	@find . -type f -name '*.gen.go' -exec rm {} +
+	@$(GO_LINT) cache clean
+	@$(GO) clean -modcache
 	@git checkout go.mod
 
 .PHONY: help
