@@ -16,7 +16,7 @@ require (
 )
 
 require (
-	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.6 // indirect
 	github.com/gofiber/schema v1.8.8 // indirect
 	github.com/gofiber/utils/v2 v2.6.2 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
