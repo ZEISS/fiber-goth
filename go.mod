@@ -20,7 +20,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/spf13/cobra v1.10.2
-	github.com/valyala/fasthttp v1.76.0
+	github.com/valyala/fasthttp v1.77.0
 	github.com/zeiss/fiber-goth/v3 v3.0.8
 	github.com/zeiss/pkg v0.2.4
 	golang.org/x/crypto v0.58.0
