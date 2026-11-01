@@ -2,10 +2,11 @@
 
 # Go variables
 GO 						?= go
+GO_TOOL 			?= $(GO) tool
 GO_RELEASER 	?= $(GO_TOOL) github.com/goreleaser/goreleaser/v2
 GO_LINT 			?= $(GO_TOOL) github.com/golangci/golangci-lint/v2/cmd/golangci-lint
-GO_TOOL 			?= $(GO) tool
 GO_TEST 			?= $(GO_TOOL) gotest.tools/gotestsum --format pkgname
+GO_AIR 				?= $(GO_TOOL) github.com/air-verse/air
 
 .PHONY: build
 build: ## Build the binary file.
@@ -27,6 +28,13 @@ mocks: ## Generate mocks.
 dex: ## Generate mocks.
 	$(GO_TOOL) github.com/dexidp/dex/cmd/dex serve dex-dev.yml
 
+.PHONY: air
+air: ## Run air.
+	$(GO_AIR) -c .air.toml
+
+.PHONY: start
+start: air ## Run the application.
+
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	$(GO_TOOL) mvdan.cc/gofumpt -w .
@@ -39,6 +47,8 @@ vet: ## Run go vet against code.
 test: fmt vet ## Run tests.
 	mkdir -p .test/reports
 	$(GO_TEST) --junitfile .test/reports/unit-test.xml -- -race ./... -count=1 -short -cover -coverprofile .test/reports/unit-test-coverage.out
+
+
 
 .PHONY: lint
 lint: ## Run lint.
