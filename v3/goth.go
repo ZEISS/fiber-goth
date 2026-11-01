@@ -153,7 +153,7 @@ func (SessionHandler) New(cfg Config) fiber.Handler {
 			return cfg.ErrorHandler(c, err)
 		}
 
-		if session.NotValid() {
+		if session.NotValid() || session.User.Expired() {
 			err := cfg.Adapter.DeleteSession(c, session.SessionToken)
 			if err != nil {
 				return cfg.ErrorHandler(c, err)
@@ -396,7 +396,7 @@ func Session(config ...Config) fiber.Handler {
 			return c.Next()
 		}
 
-		if session.NotValid() {
+		if session.NotValid() || session.User.Expired() {
 			cfg.Adapter.DeleteSession(c, session.SessionToken)
 			InvalidateSession(c, session, cfg)
 			return c.Next()

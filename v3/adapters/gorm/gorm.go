@@ -12,6 +12,8 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+const defaultExpiry = 24 * time.Hour
+
 // RunMigrations is a helper function to run the migrations for the database.
 func RunMigrations(db *gorm.DB) error {
 	return db.AutoMigrate(
@@ -36,7 +38,9 @@ func New(db *gorm.DB) adapters.Adapter {
 
 // CreateUser is a helper function to create a new user.
 func (a *gormAdapter) CreateUser(ctx context.Context, user adapters.GothUser) (adapters.GothUser, error) {
-	err := a.db.WithContext(ctx).Where(adapters.GothUser{Email: user.Email}).FirstOrCreate(&user).Error
+	err := a.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return tx.Where(adapters.GothUser{Email: user.Email}).FirstOrCreate(&user).Error
+	})
 	if err != nil {
 		return adapters.GothUser{}, goth.ErrMissingUser
 	}
@@ -47,7 +51,7 @@ func (a *gormAdapter) CreateUser(ctx context.Context, user adapters.GothUser) (a
 // GetSession is a helper function to retrieve a session by session token.
 func (a *gormAdapter) GetSession(ctx context.Context, sessionToken string) (adapters.GothSession, error) {
 	var session adapters.GothSession
-	err := a.db.WithContext(ctx).Preload(clause.Associations).Where("session_token = ?", sessionToken).First(&session).Error
+	err := a.db.WithContext(ctx).Preload("User").Preload("User.Accounts").Where("session_token = ?", sessionToken).First(&session).Error
 	if err != nil {
 		return adapters.GothSession{}, goth.ErrMissingSession
 	}
@@ -66,8 +70,6 @@ func (a *gormAdapter) GetUser(ctx context.Context, userId uuid.UUID) (adapters.G
 	return user, nil
 }
 
-const defaultExpiry = 24 * time.Hour
-
 // CreateSession is a helper function to create a new session.
 func (a *gormAdapter) CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (adapters.GothSession, error) {
 	session := adapters.GothSession{
@@ -80,7 +82,9 @@ func (a *gormAdapter) CreateSession(ctx context.Context, userID uuid.UUID, expir
 		},
 	}
 
-	err := a.db.Session(&gorm.Session{FullSaveAssociations: true}).WithContext(ctx).Create(&session).Error
+	err := a.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return tx.Session(&gorm.Session{FullSaveAssociations: true}).Create(&session).Error
+	})
 	if err != nil {
 		return adapters.GothSession{}, goth.ErrBadSession
 	}
@@ -90,17 +94,16 @@ func (a *gormAdapter) CreateSession(ctx context.Context, userID uuid.UUID, expir
 
 // DeleteSession is a helper function to delete a session by session token.
 func (a *gormAdapter) DeleteSession(ctx context.Context, sessionToken string) error {
-	err := a.db.WithContext(ctx).Where("session_token = ?", sessionToken).Delete(&adapters.GothSession{}).Error
-	if err != nil {
-		return goth.ErrBadRequest
-	}
-
-	return nil
+	return a.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return tx.Where("session_token = ?", sessionToken).Delete(&adapters.GothSession{}).Error
+	})
 }
 
 // RefreshSession is a helper function to refresh a session.
 func (a *gormAdapter) RefreshSession(ctx context.Context, session adapters.GothSession) (adapters.GothSession, error) {
-	err := a.db.WithContext(ctx).Model(&adapters.GothSession{}).Where("session_token = ?", session.SessionToken).Updates(&session).Error
+	err := a.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return tx.Model(&adapters.GothSession{}).Where("session_token = ?", session.SessionToken).Updates(&session).Error
+	})
 	if err != nil {
 		return adapters.GothSession{}, goth.ErrBadSession
 	}
@@ -110,20 +113,14 @@ func (a *gormAdapter) RefreshSession(ctx context.Context, session adapters.GothS
 
 // DeleteUser is a helper function to delete a user by ID.
 func (a *gormAdapter) DeleteUser(ctx context.Context, userId uuid.UUID) error {
-	err := a.db.WithContext(ctx).Where("id = ?", userId).Delete(&adapters.GothUser{}).Error
-	if err != nil {
-		return goth.ErrBadRequest
-	}
-
-	return nil
+	return a.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return tx.Where("id = ?", userId).Delete(&adapters.GothUser{}).Error
+	})
 }
 
 // LinkAccount is a helper function to link an account to a user.
 func (a *gormAdapter) LinkAccount(ctx context.Context, accountID, userID uuid.UUID) error {
-	err := a.db.WithContext(ctx).Model(&adapters.GothAccount{}).Where("id = ?", accountID).Update("user_id", userID).Error
-	if err != nil {
-		return goth.ErrBadRequest
-	}
-
-	return nil
+	return a.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return tx.Model(&adapters.GothAccount{}).Where("id = ?", accountID).Update("user_id", userID).Error
+	})
 }

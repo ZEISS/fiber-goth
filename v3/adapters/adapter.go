@@ -88,6 +88,17 @@ type GothUser struct {
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
+// Expired returns true if any account token expired.
+func (u *GothUser) Expired() bool {
+	for _, account := range u.Accounts {
+		if account.ExpiresAt.Before(time.Now()) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // GothSession is a session for a user.
 type GothSession struct {
 	// ID is the unique identifier of the session.
