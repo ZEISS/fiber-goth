@@ -26,6 +26,9 @@ var _ Handler = (*BeginAuthHandler)(nil)
 
 const charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
 
+// DefaultExpiry is the default expiry time for the session cookie.
+var DefaultExpiry = "24h"
+
 // Environment represents the environment the application is running in.
 type Environment string
 
@@ -153,7 +156,7 @@ func (SessionHandler) New(cfg Config) fiber.Handler {
 			return cfg.ErrorHandler(c, err)
 		}
 
-		if session.NotValid() || session.User.Expired() {
+		if session.NotValid() {
 			err := cfg.Adapter.DeleteSession(c, session.SessionToken)
 			if err != nil {
 				return cfg.ErrorHandler(c, err)
@@ -396,7 +399,7 @@ func Session(config ...Config) fiber.Handler {
 			return c.Next()
 		}
 
-		if session.NotValid() || session.User.Expired() {
+		if session.NotValid() {
 			cfg.Adapter.DeleteSession(c, session.SessionToken)
 			InvalidateSession(c, session, cfg)
 			return c.Next()
@@ -592,24 +595,24 @@ func (cfg *Config) CodeVerifierCookieName() string {
 
 // ConfigDefault is the default config.
 var ConfigDefault = Config{
-	ErrorHandler:        defaultErrorHandler,
 	BeginAuthHandler:    BeginAuthHandler{},
-	CompleteAuthHandler: CompleteAuthCompleteHandler{},
-	LogoutHandler:       LogoutHandler{},
-	SessionHandler:      SessionHandler{},
-	IndexHandler:        defaultIndexHandler,
-	Encryptor:           EncryptCookie,
-	Decryptor:           DecryptCookie,
-	Expiry:              "7h",
-	Extractor:           TokenFromCookie("fiber_goth.session"),
-	CookieSameSite:      "lax",
-	CompletionURL:       "/",
-	LoginURL:            "/login",
-	LogoutURL:           "/logout",
 	CallbackURL:         "/auth",
+	CompleteAuthHandler: CompleteAuthCompleteHandler{},
+	CompletionURL:       "/",
 	CookiePrefix:        "fiber_goth",
+	CookieSameSite:      "lax",
 	CookieSecure:        false,
+	Decryptor:           DecryptCookie,
+	Encryptor:           EncryptCookie,
 	Environment:         Development,
+	ErrorHandler:        defaultErrorHandler,
+	Expiry:              DefaultExpiry,
+	Extractor:           TokenFromCookie("fiber_goth.session"),
+	IndexHandler:        defaultIndexHandler,
+	LoginURL:            "/login",
+	LogoutHandler:       LogoutHandler{},
+	LogoutURL:           "/logout",
+	SessionHandler:      SessionHandler{},
 }
 
 // default ErrorHandler that process return error from fiber.Handler.

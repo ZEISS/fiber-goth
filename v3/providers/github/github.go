@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/zeiss/fiber-goth/v3/adapters"
 	"github.com/zeiss/fiber-goth/v3/providers"
@@ -194,7 +195,7 @@ func (g *githubProvider) CompleteAuth(ctx context.Context, adapter adapters.Adap
 				ProviderAccountID: cast.Ptr(strconv.Itoa(u.ID)),
 				AccessToken:       cast.Ptr(token.AccessToken),
 				RefreshToken:      cast.Ptr(token.RefreshToken),
-				ExpiresAt:         cast.Ptr(token.Expiry),
+				ExpiresAt:         cast.Ptr(time.Now().Add(time.Hour * 24)), // 24 hours
 				SessionState:      token.Extra("state").(string),
 			},
 		},

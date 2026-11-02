@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/zeiss/fiber-goth/v3/adapters"
@@ -177,7 +178,7 @@ func (g *dexProvider) CompleteAuth(ctx context.Context, adapter adapters.Adapter
 				Provider:     g.ID(),
 				AccessToken:  cast.Ptr(token.AccessToken),
 				RefreshToken: cast.Ptr(token.RefreshToken),
-				ExpiresAt:    cast.Ptr(token.Expiry),
+				ExpiresAt:    cast.Ptr(time.Now().Add(time.Hour * 24)), // 24 hours
 				IDToken:      cast.Ptr(rawIDToken),
 			},
 		},
