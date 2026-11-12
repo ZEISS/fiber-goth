@@ -20,7 +20,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/spf13/cobra v1.10.2
-	github.com/valyala/fasthttp v1.77.0
+	github.com/valyala/fasthttp v1.78.0
 	github.com/zeiss/fiber-goth/v3 v3.0.8
 	github.com/zeiss/pkg v0.2.4
 	golang.org/x/crypto v0.58.0
@@ -383,7 +383,7 @@ require (
 	github.com/moby/moby/client v0.5.1 // indirect
 	github.com/moby/term v0.5.2 // indirect
 	github.com/modelcontextprotocol/registry v1.8.1 // indirect
-	github.com/molecule-man/go-brrr v1.3.0 // indirect
+	github.com/molecule-man/go-brrr v1.3.1 // indirect
 	github.com/moricho/tparallel v0.3.2 // indirect
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
@@ -529,7 +529,7 @@ require (
 	gocloud.dev v0.46.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20260820142414-ca536658362e // indirect
 	golang.org/x/mod v0.42.0 // indirect
-	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/term v0.47.0 // indirect
