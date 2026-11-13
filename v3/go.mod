@@ -5,7 +5,7 @@ go 1.27.3
 require (
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/gofiber/fiber/v2 v2.52.16
-	github.com/gofiber/fiber/v3 v3.6.1
+	github.com/gofiber/fiber/v3 v3.7.0
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
 	github.com/valyala/fasthttp v1.78.0
@@ -17,8 +17,8 @@ require (
 
 require (
 	github.com/go-jose/go-jose/v4 v4.1.6 // indirect
-	github.com/gofiber/schema v1.8.8 // indirect
-	github.com/gofiber/utils/v2 v2.6.2 // indirect
+	github.com/gofiber/schema v1.9.3 // indirect
+	github.com/gofiber/utils/v2 v2.6.4 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
@@ -27,7 +27,7 @@ require (
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mattn/go-sqlite3 v1.14.24 // indirect
 	github.com/molecule-man/go-brrr v1.3.1 // indirect
-	github.com/philhofer/fwd v1.2.0 // indirect
+	github.com/philhofer/fwd v1.2.1 // indirect
 	github.com/tinylib/msgp v1.6.5 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	golang.org/x/net v0.62.0 // indirect
