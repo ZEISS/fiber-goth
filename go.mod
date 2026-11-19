@@ -20,7 +20,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/spf13/cobra v1.10.2
-	github.com/valyala/fasthttp v1.78.0
+	github.com/valyala/fasthttp v1.79.0
 	github.com/zeiss/fiber-goth/v3 v3.0.8
 	github.com/zeiss/pkg v0.2.4
 	golang.org/x/crypto v0.59.0
@@ -348,7 +348,7 @@ require (
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/kisielk/errcheck v1.30.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.6 // indirect
-	github.com/klauspost/compress v1.20.3 // indirect
+	github.com/klauspost/compress v1.20.4 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/klauspost/pgzip v1.2.7 // indirect
 	github.com/kulti/thelper v0.7.1 // indirect
