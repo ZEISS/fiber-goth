@@ -18,10 +18,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/logger"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"github.com/joho/godotenv"
-<<<<<<< HEAD
 	"github.com/kelseyhightower/envconfig"
-=======
->>>>>>> 7746cbf (chore: add env config)
 	"github.com/spf13/cobra"
 	"github.com/zeiss/pkg/logx"
 	"gorm.io/driver/postgres"
@@ -67,11 +64,8 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-<<<<<<< HEAD
 	cobra.OnInitialize(initConfig)
-=======
 	cobra.CheckErr(godotenv.Load())
->>>>>>> 7746cbf (chore: add env config)
 
 	rootCmd.PersistentFlags().StringVar(&cfg.Flags.Addr, "addr", ":3000", "addr")
 	rootCmd.PersistentFlags().StringVar(&cfg.Flags.DB.Host, "db-host", cfg.Flags.DB.Host, "Database host")
