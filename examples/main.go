@@ -18,7 +18,10 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/logger"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"github.com/joho/godotenv"
+<<<<<<< HEAD
 	"github.com/kelseyhightower/envconfig"
+=======
+>>>>>>> 7746cbf (chore: add env config)
 	"github.com/spf13/cobra"
 	"github.com/zeiss/pkg/logx"
 	"gorm.io/driver/postgres"
@@ -64,7 +67,11 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+<<<<<<< HEAD
 	cobra.OnInitialize(initConfig)
+=======
+	cobra.CheckErr(godotenv.Load())
+>>>>>>> 7746cbf (chore: add env config)
 
 	rootCmd.PersistentFlags().StringVar(&cfg.Flags.Addr, "addr", ":3000", "addr")
 	rootCmd.PersistentFlags().StringVar(&cfg.Flags.DB.Host, "db-host", cfg.Flags.DB.Host, "Database host")
@@ -131,16 +138,11 @@ func run(_ context.Context) error {
 	}
 
 	app.Use(goth.Session(gothConfig))
-	app.Get("/", goth.ProtectedHandler(func(c fiber.Ctx) error {
-		session, err := goth.SessionFromContext(c)
-		if err != nil {
-			return err
-		}
+	app.Get("/", goth.Unprotected(), func(c fiber.Ctx) error {
+		return c.SendString("Unprotected!")
+	})
 
-		return c.JSON(session)
-	}, gothConfig))
-
-	app.Get("/session", goth.NewSessionHandler(gothConfig))
+	app.Get("/session", goth.Protect(), goth.NewSessionHandler(gothConfig))
 	app.Get("/login/:provider", goth.NewBeginAuthHandler(gothConfig))
 	app.Get("/auth/:provider/callback", goth.NewCompleteAuthHandler(gothConfig))
 	app.Get("/logout", goth.NewLogoutHandler(gothConfig))

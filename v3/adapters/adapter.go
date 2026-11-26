@@ -31,7 +31,7 @@ const (
 // GothAccount represents an account in a third-party identity provider.
 type GothAccount struct {
 	// ID is the unique identifier of the account.
-	ID uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	ID uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:(gen_random_uuid())"`
 	// Type is the type of the account.
 	Type AccountType `json:"type" validate:"required"`
 	// Provider is the provider of the account.
@@ -67,7 +67,7 @@ type GothAccount struct {
 // GothUser is a user of the application.
 type GothUser struct {
 	// ID is the unique identifier of the user.
-	ID uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	ID uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:(gen_random_uuid())"`
 	// Name is the name of the user.
 	Name string `json:"name" validate:"required,max=255"`
 	// Email is the email of the user.
@@ -102,7 +102,7 @@ func (u *GothUser) Expired() bool {
 // GothSession is a session for a user.
 type GothSession struct {
 	// ID is the unique identifier of the session.
-	ID uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	ID uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:(gen_random_uuid())"`
 	// SessionToken is the token of the session.
 	SessionToken string `json:"session_token" gorm:"uniqueIndex"`
 	// CsrfToken is the CSRF token of the session.
@@ -131,7 +131,7 @@ func (s *GothSession) GetUser() GothUser {
 // GothCsrfToken is a CSRF token for a user.
 type GothCsrfToken struct {
 	// ID is the unique identifier of the CSRF token.
-	ID uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	ID uuid.UUID `json:"id" gorm:"type:uuid;primaryKey;default:(gen_random_uuid())"`
 	// Token is the unique identifier of the token.
 	Token string `json:"token"`
 	// ExpiresAt is the expiry time of the token.

@@ -385,6 +385,18 @@ func Protect(config ...Config) fiber.Handler {
 	}
 }
 
+// Unprotected is a middleware that skips the session check.
+func Unprotected(config ...Config) fiber.Handler {
+	cfg := configDefault(config...)
+	return func(c fiber.Ctx) error {
+		if cfg.Next != nil && cfg.Next(c) {
+			return c.Next()
+		}
+
+		return c.Next()
+	}
+}
+
 // Session is the default handler to attach the session to the context.
 func Session(config ...Config) fiber.Handler {
 	cfg := configDefault(config...)
