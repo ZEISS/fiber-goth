@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/fiber/v3 v3.7.0
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
-	github.com/valyala/fasthttp v1.79.0
+	github.com/valyala/fasthttp v1.80.0
 	github.com/zeiss/pkg v0.2.4
 	golang.org/x/crypto v0.59.0
 	golang.org/x/oauth2 v0.38.0
